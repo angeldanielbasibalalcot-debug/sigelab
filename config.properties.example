@@ -1,0 +1,5 @@
+# Copia este archivo como "config.properties" (en la raiz del proyecto) y ajusta tus datos.
+# config.properties NO se sube a Git (esta en .gitignore).
+db.url=jdbc:sqlserver://localhost:1433;databaseName=SIGELAB;encrypt=true;trustServerCertificate=true
+db.user=sa
+db.password=CAMBIA_ESTA_CONTRASENA
