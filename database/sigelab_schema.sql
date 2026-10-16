@@ -153,7 +153,7 @@ INSERT INTO Rol (nombre) VALUES ('ADMIN'), ('ENCARGADO'), ('DOCENTE');
 INSERT INTO Usuario (nombre, apellido, username, password_hash, correo, rol_id, estado) VALUES
 ('Admin',  'Sistema',  'admin',     LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256','Admin123'),2)),  'admin@umg.edu.gt',     1, 'ACTIVO'),
 ('Carlos', 'Perez',    'encargado', LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256','Encar123'),2)),  'encargado@umg.edu.gt',  2, 'ACTIVO'),
-('Maria',  'Lopez',    'docente',   LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256','Docen123'),2)),  'docente@umg.edu.gt',    3, 'ACTIVO'),
+('Alejandro',  'Diaz',    'docente',   LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256','Docen123'),2)),  'docente@umg.edu.gt',    3, 'ACTIVO'),
 ('Juan',   'Inactivo', 'inactivo',  LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256','Inact123'),2)),  'inactivo@umg.edu.gt',   2, 'INACTIVO');
 
 INSERT INTO TipoEquipo (nombre, descripcion) VALUES
