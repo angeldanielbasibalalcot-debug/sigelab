@@ -66,15 +66,9 @@ public class MainFrame extends JFrame {
     // ---------------------------------------------------------------
     private JComponent crearModulo(String modulo) {
         return switch (modulo) {
-            // case MOD_USUARIOS -> new UsuariosPanel();
+            case MOD_USUARIOS -> new UsuarioForm().getPanelPrincipal();
             // case MOD_LABORATORIOS -> new LaboratoriosPanel();
-            // case MOD_TIPOS -> new TiposEquipoPanel();
-            // case MOD_EQUIPOS -> new EquiposPanel();
-            // case MOD_PRESTAMOS -> new PrestamosPanel();
-            // case MOD_DEVOLUCIONES -> new DevolucionesPanel();
-            // case MOD_MANTENIMIENTO -> new MantenimientoPanel();
-            // case MOD_REPORTES -> new ReportesPanel();
-            // case MOD_AUDITORIA -> new AuditoriaPanel();
+            // ...
             default -> panelEnConstruccion(modulo);
         };
     }
@@ -171,7 +165,7 @@ public class MainFrame extends JFrame {
 
     private void cerrarSesion() {
         SesionActual.cerrar();
-        new LoginFrame().setVisible(true);
+        Inicio_de_sesion.abrir();
         dispose();
     }
 }
