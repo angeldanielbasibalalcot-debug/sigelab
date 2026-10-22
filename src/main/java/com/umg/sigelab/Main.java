@@ -1,6 +1,6 @@
 package com.umg.sigelab;
 
-import com.umg.sigelab.view.LoginFrame;
+import com.umg.sigelab.view.Inicio_de_sesion;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -14,6 +14,6 @@ public class Main {
         } catch (Exception ignorada) {
             // Si falla, se usa el aspecto por defecto de Swing.
         }
-        SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
+        SwingUtilities.invokeLater(Inicio_de_sesion::abrir);
     }
 }
