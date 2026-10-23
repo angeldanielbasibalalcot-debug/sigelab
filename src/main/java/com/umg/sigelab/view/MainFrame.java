@@ -67,7 +67,7 @@ public class MainFrame extends JFrame {
     private JComponent crearModulo(String modulo) {
         return switch (modulo) {
             case MOD_USUARIOS -> new UsuarioForm().getPanelPrincipal();
-            // case MOD_LABORATORIOS -> new LaboratoriosPanel();
+            case MOD_LABORATORIOS -> new LaboratorioForm().getPanelPrincipal();
             // ...
             default -> panelEnConstruccion(modulo);
         };
