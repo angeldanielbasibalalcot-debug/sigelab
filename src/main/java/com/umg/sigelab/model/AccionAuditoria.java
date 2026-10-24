@@ -1,6 +1,6 @@
 package com.umg.sigelab.model;
 
-/** Acciones que se registran en la tabla Auditoria (seccion 6.10 de la guia + gestion de usuarios). */
+/** Acciones que se registran en la tabla Auditoria (seccion 6.10 de la guia + catalogos y gestion de usuarios). */
 public enum AccionAuditoria {
     LOGIN_EXITOSO,
     LOGIN_FALLIDO,
@@ -11,5 +11,11 @@ public enum AccionAuditoria {
     USUARIO_DESACTIVADO,
     USUARIO_CREADO,
     USUARIO_ACTUALIZADO,
-    USUARIO_REACTIVADO
+    USUARIO_REACTIVADO,
+    LABORATORIO_CREADO,
+    LABORATORIO_ACTUALIZADO,
+    LABORATORIO_DESACTIVADO,
+    LABORATORIO_REACTIVADO,
+    TIPO_EQUIPO_CREADO,
+    TIPO_EQUIPO_ACTUALIZADO
 }
