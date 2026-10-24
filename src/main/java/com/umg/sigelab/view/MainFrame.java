@@ -68,6 +68,7 @@ public class MainFrame extends JFrame {
         return switch (modulo) {
             case MOD_USUARIOS -> new UsuarioForm().getPanelPrincipal();
             case MOD_LABORATORIOS -> new LaboratorioForm().getPanelPrincipal();
+            case MOD_TIPOS -> new TipoEquipoForm().getPanelPrincipal();
             // ...
             default -> panelEnConstruccion(modulo);
         };
