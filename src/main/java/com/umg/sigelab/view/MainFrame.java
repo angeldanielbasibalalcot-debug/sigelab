@@ -16,6 +16,8 @@ import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Font;
 
+
+import com.umg.sigelab.view.PrestamoForm;
 /**
  * Ventana principal. El menu se arma segun el rol del usuario (6.2).
  *
@@ -64,12 +66,21 @@ public class MainFrame extends JFrame {
     // ---------------------------------------------------------------
     // PUNTO DE INTEGRACION: aqui se conectan los paneles de cada modulo
     // ---------------------------------------------------------------
+
     private JComponent crearModulo(String modulo) {
+
         return switch (modulo) {
-            case MOD_USUARIOS -> new UsuarioForm().getPanelPrincipal();
-            // case MOD_LABORATORIOS -> new LaboratoriosPanel();
-            // ...
-            default -> panelEnConstruccion(modulo);
+
+            case MOD_USUARIOS ->
+                    new UsuarioForm()
+                            .getPanelPrincipal();
+
+            case MOD_PRESTAMOS ->
+                    new PrestamoForm()
+                            .getPanelPrincipal();
+
+            default ->
+                    panelEnConstruccion(modulo);
         };
     }
 
