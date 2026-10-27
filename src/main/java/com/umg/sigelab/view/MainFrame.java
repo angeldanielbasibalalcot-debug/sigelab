@@ -18,12 +18,12 @@ import java.awt.Font;
 
 /**
  * Ventana principal. El menu se arma segun el rol del usuario (6.2).
- *
+
  * COMO AGREGAR UN MODULO (para el equipo):
  *   1. Crear su panel en el paquete view (ej. EquiposPanel extends JPanel).
  *   2. En el metodo crearModulo(...) de abajo, descomentar/agregar la linea "case MOD_XXX -> new XxxPanel();".
  *   El menu y los permisos por rol ya estan listos. Hagan "Pull" antes de editar este archivo.
- *
+
  * Recordatorio: ocultar un menu no es seguridad. Cada Service debe llamar a
  * AutorizacionService.exigirRol(...) (RN-20).
  */
@@ -64,14 +64,41 @@ public class MainFrame extends JFrame {
     // ---------------------------------------------------------------
     // PUNTO DE INTEGRACION: aqui se conectan los paneles de cada modulo
     // ---------------------------------------------------------------
+
     private JComponent crearModulo(String modulo) {
+
         return switch (modulo) {
-            case MOD_USUARIOS -> new UsuarioForm().getPanelPrincipal();
-            case MOD_LABORATORIOS -> new LaboratorioForm().getPanelPrincipal();
-            case MOD_TIPOS -> new TipoEquipoForm().getPanelPrincipal();
-            case MOD_EQUIPOS -> new EquipoForm().getPanelPrincipal();
-            case MOD_MANTENIMIENTO -> new MantenimientoForm().getPanelPrincipal();
-            default -> panelEnConstruccion(modulo);
+
+            case MOD_USUARIOS ->
+                    new UsuarioForm()
+                            .getPanelPrincipal();
+
+            case MOD_LABORATORIOS ->
+                    new LaboratorioForm()
+                            .getPanelPrincipal();
+
+            case MOD_TIPOS ->
+                    new TipoEquipoForm()
+                            .getPanelPrincipal();
+
+            case MOD_EQUIPOS ->
+                    new EquipoForm()
+                            .getPanelPrincipal();
+
+            case MOD_PRESTAMOS ->
+                    new PrestamoForm()
+                            .getPanelPrincipal();
+
+            case MOD_DEVOLUCIONES ->
+                    new DevolucionForm()
+                            .getPanelPrincipal();
+
+            case MOD_MANTENIMIENTO ->
+                    new MantenimientoForm()
+                            .getPanelPrincipal();
+
+            default ->
+                    panelEnConstruccion(modulo);
         };
     }
 
