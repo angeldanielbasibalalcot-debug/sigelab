@@ -16,16 +16,14 @@ import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Font;
 
-
-import com.umg.sigelab.view.PrestamoForm;
 /**
  * Ventana principal. El menu se arma segun el rol del usuario (6.2).
- *
+
  * COMO AGREGAR UN MODULO (para el equipo):
  *   1. Crear su panel en el paquete view (ej. EquiposPanel extends JPanel).
  *   2. En el metodo crearModulo(...) de abajo, descomentar/agregar la linea "case MOD_XXX -> new XxxPanel();".
  *   El menu y los permisos por rol ya estan listos. Hagan "Pull" antes de editar este archivo.
- *
+
  * Recordatorio: ocultar un menu no es seguridad. Cada Service debe llamar a
  * AutorizacionService.exigirRol(...) (RN-20).
  */
@@ -95,6 +93,9 @@ public class MainFrame extends JFrame {
                     new DevolucionForm()
                             .getPanelPrincipal();
 
+            case MOD_MANTENIMIENTO ->
+                    new MantenimientoForm()
+                            .getPanelPrincipal();
 
             default ->
                     panelEnConstruccion(modulo);
