@@ -1,13 +1,18 @@
+package com.umg.sigelab.service;
 
-
-    package com.umg.sigelab.service;
-
+import com.umg.sigelab.model.Equipo;
 import com.umg.sigelab.repository.PrestamoRepository;
 
-    public class PrestamoService {
+import java.util.List;
 
-        private PrestamoRepository repository =
-                new PrestamoRepository();
+public class PrestamoService {
+
+    private PrestamoRepository repository =
+            new PrestamoRepository();
+
+    public List<Equipo> listarEquiposDisponibles() {
+
+        return repository.listarEquiposDisponibles();
 
     }
-
+}

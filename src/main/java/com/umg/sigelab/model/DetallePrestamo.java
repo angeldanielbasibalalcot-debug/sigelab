@@ -5,7 +5,7 @@
 
         private int idDetalle;
         private int idPrestamo;
-        private int idLibro;
+        private int idEquipo;
         private int cantidad;
 
         public int getIdDetalle() {
@@ -24,12 +24,12 @@
             this.idPrestamo = idPrestamo;
         }
 
-        public int getIdLibro() {
-            return idLibro;
+        public int getIdEquipo() {
+            return idEquipo;
         }
 
-        public void setIdLibro(int idLibro) {
-            this.idLibro = idLibro;
+        public void setIdEquipo(int idEquipo) {
+            this.idEquipo  = idEquipo;
         }
 
         public int getCantidad() {

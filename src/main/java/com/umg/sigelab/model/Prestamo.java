@@ -1,54 +1,79 @@
-
-    package com.umg.sigelab.model;
+package com.umg.sigelab.model;
 
 import java.util.Date;
 
-    public class Prestamo {
+public class Prestamo {
 
-        private int idPrestamo;
-        private int idUsuario;
-        private Date fechaPrestamo;
-        private EstadoPrestamo  estado;
+    private int id;
 
-        public Prestamo() {
-        }
+    private String solicitante;
 
-        public Prestamo(int idUsuario) {
-            this.idUsuario = idUsuario;
-        }
+    private Date fechaPrestamo;
 
-        public int getIdPrestamo() {
-            return idPrestamo;
-        }
+    private Date fechaEsperadaDevolucion;
 
-        public void setIdPrestamo(int idPrestamo) {
-            this.idPrestamo = idPrestamo;
-        }
+    private int usuarioRegistraId;
 
-        public int getIdUsuario() {
-            return idUsuario;
-        }
+    private EstadoPrestamo estado;
 
-        public void setIdUsuario(int idUsuario) {
-            this.idUsuario = idUsuario;
-        }
+    private String observaciones;
 
-        public Date getFechaPrestamo() {
-            return fechaPrestamo;
-        }
-
-        public void setFechaPrestamo(Date fechaPrestamo) {
-            this.fechaPrestamo = fechaPrestamo;
-        }
-
-        public EstadoPrestamo  getEstado() {
-            return estado;
-        }
-
-        public void setEstado(EstadoPrestamo  estado) {
-            this.estado = estado;
-        }
+    public Prestamo() {
     }
 
+    public int getId() {
+        return id;
+    }
 
+    public void setId(int id) {
+        this.id = id;
+    }
 
+    public String getSolicitante() {
+        return solicitante;
+    }
+
+    public void setSolicitante(String solicitante) {
+        this.solicitante = solicitante;
+    }
+
+    public Date getFechaPrestamo() {
+        return fechaPrestamo;
+    }
+
+    public void setFechaPrestamo(Date fechaPrestamo) {
+        this.fechaPrestamo = fechaPrestamo;
+    }
+
+    public Date getFechaEsperadaDevolucion() {
+        return fechaEsperadaDevolucion;
+    }
+
+    public void setFechaEsperadaDevolucion(Date fechaEsperadaDevolucion) {
+        this.fechaEsperadaDevolucion = fechaEsperadaDevolucion;
+    }
+
+    public int getUsuarioRegistraId() {
+        return usuarioRegistraId;
+    }
+
+    public void setUsuarioRegistraId(int usuarioRegistraId) {
+        this.usuarioRegistraId = usuarioRegistraId;
+    }
+
+    public EstadoPrestamo getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoPrestamo estado) {
+        this.estado = estado;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+}
