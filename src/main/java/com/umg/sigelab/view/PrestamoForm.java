@@ -24,7 +24,13 @@ public class PrestamoForm {
 
     public PrestamoForm() {
 
-        panelPrincipal = new JPanel(new BorderLayout());
+        panelPrincipal =
+                new JPanel(
+                        new BorderLayout());
+
+        panelPrincipal.setBorder(
+                BorderFactory.createEmptyBorder(
+                        15, 15, 15, 15));
 
         JLabel titulo = new JLabel(
                 "Modulo de Prestamos",
@@ -39,7 +45,14 @@ public class PrestamoForm {
                 titulo,
                 BorderLayout.NORTH);
 
-        JPanel centro = new JPanel();
+        JPanel centro =
+                new JPanel(
+                        new GridBagLayout());
+
+        centro.setBorder(
+                BorderFactory.createTitledBorder(
+                        "Registrar Prestamo"));
+
         centro.setLayout(new BoxLayout(
                 centro,
                 BoxLayout.Y_AXIS));

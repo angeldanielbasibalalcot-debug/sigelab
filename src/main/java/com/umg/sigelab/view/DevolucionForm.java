@@ -22,6 +22,9 @@ public class DevolucionForm {
         panelPrincipal =
                 new JPanel(
                         new BorderLayout());
+        panelPrincipal.setBorder(
+                BorderFactory.createEmptyBorder(
+                        15, 15, 15, 15));
 
         JLabel titulo =
                 new JLabel(
@@ -37,7 +40,14 @@ public class DevolucionForm {
         panelPrincipal.add(
                 titulo,
                 BorderLayout.NORTH);
-        JPanel centro = new JPanel();
+
+        JPanel centro =
+                new JPanel(
+                        new GridBagLayout());
+
+        centro.setBorder(
+                BorderFactory.createTitledBorder(
+                        "Registrar Devolucion"));
 
         JComboBox<DetallePrestamoCombo> cboDetalle =
                 new JComboBox<>();
@@ -62,25 +72,37 @@ public class DevolucionForm {
                 new JButton(
                         "Registrar Devolucion");
 
-        centro.add(
-                new JLabel(
-                        "Equipo Prestado:"));
+        agregarCampo(
+                centro,
+                0,
+                "Equipo Prestado:",
+                cboDetalle);
 
-        centro.add(cboDetalle);
+        agregarCampo(
+                centro,
+                1,
+                "Condicion:",
+                cboCondicion);
 
-        centro.add(
-                new JLabel(
-                        "Condicion:"));
-
-        centro.add(cboCondicion);
-
-        centro.add(
-                new JLabel(
-                        "Observacion:"));
-
-        centro.add(
+        agregarCampo(
+                centro,
+                2,
+                "Observacion:",
                 new JScrollPane(
                         txtObservacion));
+        GridBagConstraints boton =
+                new GridBagConstraints();
+
+        boton.gridx = 0;
+        boton.gridy = 3;
+        boton.gridwidth = 2;
+        boton.insets =
+                new Insets(
+                        10, 10, 10, 10);
+
+        centro.add(
+                btnDevolver,
+                boton);
 
         centro.add(btnDevolver);
         btnDevolver.addActionListener(e -> {
@@ -128,7 +150,7 @@ public class DevolucionForm {
 
                 JOptionPane.showMessageDialog(
                         panelPrincipal,
-                        "Devolucion registrada correctamente");
+                        "\"Devolucion registrada correctamente.\\nEl equipo volvió a estado DISPONIBLE.\"");
 
             } catch (Exception ex) {
 
@@ -150,5 +172,33 @@ public class DevolucionForm {
 
     public JPanel getPanelPrincipal() {
         return panelPrincipal;
+    }
+
+    private void agregarCampo(
+            JPanel panel,
+            int fila,
+            String etiqueta,
+            JComponent componente) {
+
+        GridBagConstraints c =
+                new GridBagConstraints();
+
+        c.gridx = 0;
+        c.gridy = fila;
+        c.anchor = GridBagConstraints.WEST;
+        c.insets = new Insets(
+                5, 5, 5, 5);
+
+        panel.add(
+                new JLabel(etiqueta),
+                c);
+
+        c.gridx = 1;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+
+        panel.add(
+                componente,
+                c);
     }
 }
