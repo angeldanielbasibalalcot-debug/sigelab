@@ -70,6 +70,7 @@ public class MainFrame extends JFrame {
             case MOD_LABORATORIOS -> new LaboratorioForm().getPanelPrincipal();
             case MOD_TIPOS -> new TipoEquipoForm().getPanelPrincipal();
             case MOD_EQUIPOS -> new EquipoForm().getPanelPrincipal();
+            case MOD_MANTENIMIENTO -> new MantenimientoForm().getPanelPrincipal();
             default -> panelEnConstruccion(modulo);
         };
     }
