@@ -4,6 +4,9 @@ import com.umg.sigelab.util.ConexionBD;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import com.umg.sigelab.model.DetallePrestamoCombo;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.sql.ResultSet;
 
@@ -137,5 +140,56 @@ public class DevolucionRepository {
             e.printStackTrace();
 
         }
+    }
+    public List<DetallePrestamoCombo> listarPendientes() {
+
+        List<DetallePrestamoCombo> lista =
+                new ArrayList<>();
+
+        String sql =
+                "SELECT dp.id, " +
+                        "p.id AS prestamo_id, " +
+                        "e.codigo_inventario, " +
+                        "e.nombre " +
+                        "FROM DetallePrestamo dp " +
+                        "INNER JOIN Prestamo p " +
+                        "ON dp.prestamo_id = p.id " +
+                        "INNER JOIN Equipo e " +
+                        "ON dp.equipo_id = e.id " +
+                        "WHERE dp.fecha_devolucion IS NULL";
+
+        try (
+                Connection con =
+                        ConexionBD.obtenerConexion();
+
+                PreparedStatement ps =
+                        con.prepareStatement(sql);
+
+                ResultSet rs =
+                        ps.executeQuery()
+        ) {
+
+            while (rs.next()) {
+
+                lista.add(
+                        new DetallePrestamoCombo(
+                                rs.getInt("id"),
+                                rs.getString("codigo_inventario")
+                                        + " - "
+                                        + rs.getString("nombre")
+                                        + " (Prestamo "
+                                        + rs.getInt("prestamo_id")
+                                        + ")"
+                        )
+                );
+            }
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        }
+
+        return lista;
     }
 }

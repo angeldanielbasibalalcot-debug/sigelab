@@ -6,12 +6,16 @@ import com.umg.sigelab.model.CondicionDevolucion;
 import com.umg.sigelab.service.DevolucionService;
 import com.umg.sigelab.util.SesionActual;
 
+import com.umg.sigelab.model.DetallePrestamoCombo;
+import java.util.List;
+
 public class DevolucionForm {
 
     private JPanel panelPrincipal;
 
     private DevolucionService service =
             new DevolucionService();
+
 
     public DevolucionForm() {
 
@@ -35,8 +39,17 @@ public class DevolucionForm {
                 BorderLayout.NORTH);
         JPanel centro = new JPanel();
 
-        JTextField txtDetalleId =
-                new JTextField(10);
+        JComboBox<DetallePrestamoCombo> cboDetalle =
+                new JComboBox<>();
+
+        List<DetallePrestamoCombo> pendientes =
+                service.listarPendientes();
+
+        for (DetallePrestamoCombo item : pendientes) {
+
+            cboDetalle.addItem(item);
+
+        }
 
         JComboBox<CondicionDevolucion> cboCondicion =
                 new JComboBox<>(
@@ -51,9 +64,9 @@ public class DevolucionForm {
 
         centro.add(
                 new JLabel(
-                        "ID Detalle Prestamo:"));
+                        "Equipo Prestado:"));
 
-        centro.add(txtDetalleId);
+        centro.add(cboDetalle);
 
         centro.add(
                 new JLabel(
@@ -74,9 +87,22 @@ public class DevolucionForm {
 
             try {
 
+                DetallePrestamoCombo seleccionado =
+                        (DetallePrestamoCombo)
+                                cboDetalle.getSelectedItem();
+
+                if (seleccionado == null) {
+
+                    JOptionPane.showMessageDialog(
+                            panelPrincipal,
+                            "No existen equipos pendientes.");
+
+                    return;
+                }
+
                 int detalleId =
-                        Integer.parseInt(
-                                txtDetalleId.getText());
+                        seleccionado.getDetalleId();
+
 
                 service.devolverEquipo(
                         detalleId,
@@ -92,6 +118,13 @@ public class DevolucionForm {
 
                 service.finalizarPrestamo(
                         detalleId);
+
+                txtObservacion.setText("");
+
+                cboCondicion.setSelectedIndex(0);
+
+                cboDetalle.removeItem(
+                        seleccionado);
 
                 JOptionPane.showMessageDialog(
                         panelPrincipal,

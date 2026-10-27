@@ -1,6 +1,8 @@
 package com.umg.sigelab.service;
 
 import com.umg.sigelab.repository.DevolucionRepository;
+import com.umg.sigelab.model.DetallePrestamoCombo;
+import java.util.List;
 
 public class DevolucionService {
 
@@ -31,6 +33,12 @@ public class DevolucionService {
 
         repository.finalizarPrestamo(
                 detallePrestamoId);
+
+    }
+    public List<DetallePrestamoCombo>
+    listarPendientes() {
+
+        return repository.listarPendientes();
 
     }
 }
