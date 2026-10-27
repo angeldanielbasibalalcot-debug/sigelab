@@ -107,4 +107,35 @@ public class DevolucionRepository {
 
         }
     }
+    public void finalizarPrestamo(
+            int detallePrestamoId) {
+
+        String sql =
+                "UPDATE Prestamo " +
+                        "SET estado = 'FINALIZADO' " +
+                        "WHERE id = (" +
+                        "SELECT prestamo_id " +
+                        "FROM DetallePrestamo " +
+                        "WHERE id = ?)";
+
+        try (
+                Connection con =
+                        ConexionBD.obtenerConexion();
+
+                PreparedStatement ps =
+                        con.prepareStatement(sql)
+        ) {
+
+            ps.setInt(
+                    1,
+                    detallePrestamoId);
+
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        }
+    }
 }

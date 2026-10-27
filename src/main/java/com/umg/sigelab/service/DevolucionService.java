@@ -26,4 +26,11 @@ public class DevolucionService {
                 detallePrestamoId);
 
     }
+    public void finalizarPrestamo(
+            int detallePrestamoId) {
+
+        repository.finalizarPrestamo(
+                detallePrestamoId);
+
+    }
 }

@@ -90,6 +90,9 @@ public class DevolucionForm {
                 service.actualizarEstadoDisponible(
                         detalleId);
 
+                service.finalizarPrestamo(
+                        detalleId);
+
                 JOptionPane.showMessageDialog(
                         panelPrincipal,
                         "Devolucion registrada correctamente");
