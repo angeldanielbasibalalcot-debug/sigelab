@@ -91,6 +91,11 @@ public class MainFrame extends JFrame {
                     new PrestamoForm()
                             .getPanelPrincipal();
 
+            case MOD_DEVOLUCIONES ->
+                    new DevolucionForm()
+                            .getPanelPrincipal();
+
+
             default ->
                     panelEnConstruccion(modulo);
         };
