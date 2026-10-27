@@ -1,220 +1,316 @@
 package com.umg.sigelab.view;
 
+import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.uiDesigner.core.Spacer;
 import com.umg.sigelab.controller.EquipoController;
+import com.umg.sigelab.controller.QrController;
 import com.umg.sigelab.exception.BusinessException;
-import com.umg.sigelab.model.*;
+import com.umg.sigelab.model.Equipo;
+import com.umg.sigelab.model.EstadoEquipo;
+import com.umg.sigelab.model.EstadoLaboratorio;
+import com.umg.sigelab.model.Laboratorio;
+import com.umg.sigelab.model.TipoEquipo;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
-
-import com.umg.sigelab.controller.QrController;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.nio.file.Files;
+import java.io.File;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * Pantalla de Equipos (formulario del GUI Designer: EquipoForm.form).
+ * Solo captura y muestra datos. Las reglas viven en EquipoService.
+ */
 public class EquipoForm {
 
+    private JPanel panelPrincipal;
+    private JTextField txtId;
+    private JTextField txtCodigo;
+    private JTextField txtNombre;
+    private JComboBox<TipoEquipo> cmbTipo;
+    private JTextField txtMarca;
+    private JTextField txtModelo;
+    private JTextField txtSerie;
+    private JComboBox<Laboratorio> cmbLaboratorio;
+    private JTextField txtEstado;
+    private JTextField txtObservaciones;
+    private JPanel panelBotones;
+    private JButton btnNuevo;
+    private JButton btnGuardar;
+    private JButton btnActualizar;
+    private JButton btnRecargar;
+    private JButton btnGenerarQr;
+    private JButton btnLeerQr;
+    private JTextField txtBuscar;
+    private JTable tblEquipos;
+
     private final EquipoController controller = new EquipoController();
+    private final QrController qr = new QrController();
 
-    private final QrController qrController = new QrController();
-
-    private static final Path CARPETA_QR = Path.of("D:\\SIGELAB\\QR");
-
-    private final JButton btnGenerarQr = new JButton("Generar QR");
-    private final JButton btnLeerQr = new JButton("Leer QR");
-
-    private final JPanel panelPrincipal =
-            new JPanel(new BorderLayout(10, 10));
-
-    private final JTextField txtId = new JTextField();
-    private final JTextField txtCodigo = new JTextField();
-    private final JTextField txtNombre = new JTextField();
-    private final JTextField txtMarca = new JTextField();
-    private final JTextField txtModelo = new JTextField();
-    private final JTextField txtSerie = new JTextField();
-    private final JTextField txtEstado = new JTextField();
-    private final JTextField txtBuscar = new JTextField();
-
-    private final JTextArea txtObservaciones = new JTextArea(3, 30);
-
-    private final JComboBox<TipoEquipo> cmbTipo = new JComboBox<>();
-    private final JComboBox<Laboratorio> cmbLaboratorio = new JComboBox<>();
-
-    private final JButton btnNuevo = new JButton("Nuevo");
-    private final JButton btnGuardar = new JButton("Guardar");
-    private final JButton btnActualizar = new JButton("Actualizar");
-    private final JButton btnRecargar = new JButton("Recargar");
-
-    private final JLabel lblEstado = new JLabel(" ");
-
-    private final DefaultTableModel modeloTabla =
-            new DefaultTableModel(new Object[]{
-                    "ID", "Código", "Nombre", "Tipo", "Marca",
-                    "Modelo", "Serie", "Laboratorio", "Estado",
-                    "Observaciones"
-            }, 0) {
-                @Override
-                public boolean isCellEditable(int fila, int columna) {
-                    return false;
-                }
-
-                @Override
-                public Class<?> getColumnClass(int columna) {
-                    return columna == 0 ? Integer.class : String.class;
-                }
-            };
-
-    private final JTable tabla = new JTable(modeloTabla);
-
-    private final TableRowSorter<DefaultTableModel> ordenador =
-            new TableRowSorter<>(modeloTabla);
-
-    private List<Equipo> equipos = List.of();
+    private DefaultTableModel modelo;
+    private List<Equipo> todos = new ArrayList<>();
+    private final List<Equipo> visibles = new ArrayList<>();
     private Equipo seleccionado;
-    private boolean ocupado;
-    private boolean datosCargados;
 
     public EquipoForm() {
-        construirPantalla();
+        configurarTabla();
+        configurarCombos();
         configurarEventos();
-        nuevo();
-        recargar();
+        ejecutar(this::recargar);
     }
 
     public JPanel getPanelPrincipal() {
         return panelPrincipal;
     }
 
-    private void construirPantalla() {
-        panelPrincipal.setBorder(
-                BorderFactory.createEmptyBorder(12, 12, 12, 12));
+    // ---------- Configuración ----------
 
-        txtId.setEditable(false);
-        txtEstado.setEditable(false);
-
-        cmbTipo.setEditable(false);
-        cmbLaboratorio.setEditable(false);
-
-        txtObservaciones.setLineWrap(true);
-        txtObservaciones.setWrapStyleWord(true);
-
-        JPanel campos = new JPanel(new GridBagLayout());
-
-        agregarCampo(campos, 0, 0, "ID:", txtId);
-        agregarCampo(campos, 0, 2, "Código de inventario:", txtCodigo);
-
-        agregarCampo(campos, 1, 0, "Nombre:", txtNombre);
-        agregarCampo(campos, 1, 2, "Tipo de equipo:", cmbTipo);
-
-        agregarCampo(campos, 2, 0, "Marca:", txtMarca);
-        agregarCampo(campos, 2, 2, "Modelo:", txtModelo);
-
-        agregarCampo(campos, 3, 0, "Número de serie:", txtSerie);
-        agregarCampo(campos, 3, 2, "Laboratorio:", cmbLaboratorio);
-
-        agregarCampo(campos, 4, 0, "Estado:", txtEstado);
-        agregarCampo(campos, 4, 2, "Observaciones:",
-                new JScrollPane(txtObservaciones));
-
-        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        botones.add(btnNuevo);
-        botones.add(btnGuardar);
-        botones.add(btnActualizar);
-        botones.add(btnRecargar);
-        botones.add(btnGenerarQr);
-        botones.add(btnLeerQr);
-
-        JPanel superior = new JPanel(new BorderLayout(8, 8));
-        superior.add(campos, BorderLayout.CENTER);
-        superior.add(botones, BorderLayout.SOUTH);
-
-        JPanel busqueda = new JPanel(new BorderLayout(8, 8));
-        busqueda.add(new JLabel("Buscar equipo:"), BorderLayout.WEST);
-        busqueda.add(txtBuscar, BorderLayout.CENTER);
-
-        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tabla.setRowSorter(ordenador);
-        tabla.setRowHeight(25);
-        tabla.setFillsViewportHeight(true);
-        tabla.getTableHeader().setReorderingAllowed(false);
-        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-
-        int[] anchos = {60, 130, 220, 130, 120, 140, 140, 260, 150, 280};
-
-        for (int i = 0; i < anchos.length; i++) {
-            tabla.getColumnModel().getColumn(i).setPreferredWidth(anchos[i]);
-        }
-
-        JPanel listado = new JPanel(new BorderLayout(8, 8));
-        listado.add(busqueda, BorderLayout.NORTH);
-        listado.add(new JScrollPane(tabla), BorderLayout.CENTER);
-        listado.add(lblEstado, BorderLayout.SOUTH);
-
-        panelPrincipal.add(superior, BorderLayout.NORTH);
-        panelPrincipal.add(listado, BorderLayout.CENTER);
+    private void configurarTabla() {
+        modelo = new DefaultTableModel(new String[]{
+                "ID", "Código", "Nombre", "Tipo", "Marca", "Modelo",
+                "Serie", "Laboratorio", "Estado"}, 0) {
+            @Override
+            public boolean isCellEditable(int fila, int columna) {
+                return false;
+            }
+        };
+        tblEquipos.setModel(modelo);
+        tblEquipos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblEquipos.getTableHeader().setReorderingAllowed(false);
     }
 
-    private void agregarCampo(
-            JPanel panel, int fila, int columna,
-            String etiqueta, JComponent componente) {
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridx = columna;
-        c.gridy = fila;
-        c.anchor = GridBagConstraints.NORTHWEST;
-        c.insets = new Insets(5, 5, 5, 10);
-        panel.add(new JLabel(etiqueta), c);
-
-        c.gridx = columna + 1;
-        c.weightx = 1;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(componente, c);
+    private void configurarCombos() {
+        cmbTipo.setRenderer(new ItemRenderer());
+        cmbLaboratorio.setRenderer(new ItemRenderer());
     }
 
     private void configurarEventos() {
-        btnNuevo.addActionListener(e -> nuevo());
-        btnGuardar.addActionListener(e -> guardar(false));
-        btnActualizar.addActionListener(e -> guardar(true));
-        btnRecargar.addActionListener(e -> recargar());
-        btnGenerarQr.addActionListener(e -> generarQr());
-        btnLeerQr.addActionListener(e -> leerQr());
+        btnNuevo.addActionListener(ev -> nuevo());
+        btnGuardar.addActionListener(ev -> ejecutar(this::guardar));
+        btnActualizar.addActionListener(ev -> ejecutar(this::actualizar));
+        btnRecargar.addActionListener(ev -> ejecutar(this::recargar));
+        btnGenerarQr.addActionListener(ev -> ejecutar(this::generarQr));
+        btnLeerQr.addActionListener(ev -> ejecutar(this::leerQr));
 
-        tabla.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && !ocupado) {
-                seleccionarFila();
+        tblEquipos.getSelectionModel().addListSelectionListener(ev -> {
+            if (ev.getValueIsAdjusting()) {
+                return;
+            }
+            int fila = tblEquipos.getSelectedRow();
+            if (fila >= 0 && fila < visibles.size()) {
+                cargarEnFormulario(visibles.get(fila));
             }
         });
 
-        txtBuscar.getDocument().addDocumentListener(
-                new DocumentListener() {
-                    public void insertUpdate(DocumentEvent e) {
-                        filtrar();
-                    }
+        txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent ev) {
+                filtrar();
+            }
 
-                    public void removeUpdate(DocumentEvent e) {
-                        filtrar();
-                    }
+            @Override
+            public void removeUpdate(DocumentEvent ev) {
+                filtrar();
+            }
 
-                    public void changedUpdate(DocumentEvent e) {
-                        filtrar();
-                    }
-                });
+            @Override
+            public void changedUpdate(DocumentEvent ev) {
+                filtrar();
+            }
+        });
     }
 
-    private void nuevo() {
-        seleccionado = null;
-        tabla.clearSelection();
+    // ---------- Acciones de botones ----------
 
+    private void nuevo() {
+        tblEquipos.clearSelection();
+        limpiarFormulario();
+        txtCodigo.requestFocus();
+    }
+
+    private void guardar() {
+        if (seleccionado != null) {
+            aviso("Ese equipo ya existe. Pulse Nuevo para registrar otro "
+                    + "o Actualizar para guardar cambios.");
+            return;
+        }
+        controller.crear(leerFormulario());
+        info("Equipo registrado correctamente.");
+        recargar();
+    }
+
+    private void actualizar() {
+        if (seleccionado == null) {
+            aviso("Seleccione un equipo en la tabla.");
+            return;
+        }
+        controller.actualizar(leerFormulario());
+        info("Equipo actualizado correctamente.");
+        recargar();
+    }
+
+    private void recargar() {
+        cargarCombos();
+        todos = controller.listar();
+        filtrar();
+        limpiarFormulario();
+    }
+
+    private void generarQr() {
+        if (seleccionado == null) {
+            aviso("Seleccione un equipo de la tabla para generar su QR.");
+            return;
+        }
+        String codigo = seleccionado.getCodigoInventario();
+        BufferedImage imagen = qr.generar(codigo);
+        Object[] opciones = {"Guardar imagen", "Cerrar"};
+        int resp = JOptionPane.showOptionDialog(panelPrincipal,
+                new JLabel(new ImageIcon(imagen)), "QR de " + codigo,
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+                null, opciones, opciones[1]);
+        if (resp == 0) {
+            guardarImagen(imagen, codigo);
+        }
+    }
+
+    private void guardarImagen(BufferedImage imagen, String codigo) {
+        JFileChooser selector = new JFileChooser();
+        selector.setSelectedFile(new File(codigo + ".png"));
+        if (selector.showSaveDialog(panelPrincipal) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        Path destino = selector.getSelectedFile().toPath();
+        String nombre = destino.getFileName().toString();
+        if (!nombre.toLowerCase().endsWith(".png")) {
+            destino = destino.resolveSibling(nombre + ".png");
+        }
+        qr.guardarPng(imagen, destino);
+        info("Imagen guardada en: " + destino);
+    }
+
+    /**
+     * RN-19: leer el QR solo identifica y muestra; no cambia ningún estado.
+     */
+    private void leerQr() {
+        JFileChooser selector = new JFileChooser();
+        selector.setFileFilter(new FileNameExtensionFilter(
+                "Imágenes (png, jpg)", "png", "jpg", "jpeg"));
+        if (selector.showOpenDialog(panelPrincipal) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        Equipo equipo = qr.leer(selector.getSelectedFile().toPath());
+        if (equipo == null) {
+            aviso("El código leído no corresponde a ningún equipo registrado.");
+            return;
+        }
+        tblEquipos.clearSelection();
+        cargarEnFormulario(equipo);
+
+        String mensaje = "Equipo identificado: " + equipo.getCodigoInventario()
+                + " - " + equipo.getNombre()
+                + "\nEstado: " + equipo.getEstado();
+        if (equipo.getEstado() == EstadoEquipo.DISPONIBLE) {
+            mensaje += "\nDisponible para agregar a un préstamo.";
+        } else {
+            mensaje += "\nBloqueado: no se puede prestar en este estado.";
+        }
+        info(mensaje);
+    }
+
+    // ---------- Datos y tabla ----------
+
+    private void cargarCombos() {
+        cmbTipo.removeAllItems();
+        TipoEquipo marcadorTipo = new TipoEquipo();
+        marcadorTipo.setId(0);
+        cmbTipo.addItem(marcadorTipo);
+        for (TipoEquipo tipo : controller.listarTipos()) {
+            cmbTipo.addItem(tipo);
+        }
+
+        cmbLaboratorio.removeAllItems();
+        Laboratorio marcadorLab = new Laboratorio();
+        marcadorLab.setId(0);
+        cmbLaboratorio.addItem(marcadorLab);
+        for (Laboratorio lab : controller.listarLaboratorios()) {
+            if (lab.getEstado() == EstadoLaboratorio.ACTIVO) {
+                cmbLaboratorio.addItem(lab);
+            }
+        }
+    }
+
+    private void filtrar() {
+        String texto = txtBuscar.getText().trim().toLowerCase();
+        visibles.clear();
+        modelo.setRowCount(0);
+        for (Equipo e : todos) {
+            if (!texto.isEmpty() && !coincide(e, texto)) {
+                continue;
+            }
+            visibles.add(e);
+            modelo.addRow(new Object[]{
+                    e.getId(),
+                    e.getCodigoInventario(),
+                    e.getNombre(),
+                    e.getTipoEquipo() == null ? "" : e.getTipoEquipo().getNombre(),
+                    nz(e.getMarca()),
+                    nz(e.getModelo()),
+                    nz(e.getNumeroSerie()),
+                    e.getLaboratorio() == null ? "" : e.getLaboratorio().getNombre(),
+                    e.getEstado() == null ? "" : e.getEstado().name()
+            });
+        }
+    }
+
+    private boolean coincide(Equipo e, String texto) {
+        return nz(e.getCodigoInventario()).toLowerCase().contains(texto)
+                || nz(e.getNombre()).toLowerCase().contains(texto)
+                || nz(e.getMarca()).toLowerCase().contains(texto)
+                || nz(e.getModelo()).toLowerCase().contains(texto)
+                || nz(e.getNumeroSerie()).toLowerCase().contains(texto);
+    }
+
+    // ---------- Formulario ----------
+
+    private Equipo leerFormulario() {
+        Equipo e = new Equipo();
+        if (seleccionado != null) {
+            e.setId(seleccionado.getId());
+        }
+        e.setCodigoInventario(txtCodigo.getText());
+        e.setNombre(txtNombre.getText());
+        e.setTipoEquipo((TipoEquipo) cmbTipo.getSelectedItem());
+        e.setMarca(txtMarca.getText());
+        e.setModelo(txtModelo.getText());
+        e.setNumeroSerie(txtSerie.getText());
+        e.setLaboratorio((Laboratorio) cmbLaboratorio.getSelectedItem());
+        e.setObservaciones(txtObservaciones.getText());
+        return e;
+    }
+
+    private void cargarEnFormulario(Equipo e) {
+        seleccionado = e;
+        txtId.setText(String.valueOf(e.getId()));
+        txtCodigo.setText(nz(e.getCodigoInventario()));
+        txtNombre.setText(nz(e.getNombre()));
+        txtMarca.setText(nz(e.getMarca()));
+        txtModelo.setText(nz(e.getModelo()));
+        txtSerie.setText(nz(e.getNumeroSerie()));
+        txtObservaciones.setText(nz(e.getObservaciones()));
+        txtEstado.setText(e.getEstado() == null ? "" : e.getEstado().name());
+        seleccionarTipo(e.getTipoEquipo());
+        seleccionarLaboratorio(e.getLaboratorio());
+    }
+
+    private void limpiarFormulario() {
+        seleccionado = null;
         txtId.setText("");
         txtCodigo.setText("");
         txtNombre.setText("");
@@ -222,527 +318,213 @@ public class EquipoForm {
         txtModelo.setText("");
         txtSerie.setText("");
         txtObservaciones.setText("");
-        txtEstado.setText(EstadoEquipo.DISPONIBLE.name());
-
-        cmbTipo.setSelectedIndex(-1);
-        cmbLaboratorio.setSelectedIndex(-1);
-
-        actualizarControles();
-        txtCodigo.requestFocusInWindow();
+        txtEstado.setText("");
+        if (cmbTipo.getItemCount() > 0) {
+            cmbTipo.setSelectedIndex(0);
+        }
+        if (cmbLaboratorio.getItemCount() > 0) {
+            cmbLaboratorio.setSelectedIndex(0);
+        }
     }
 
-    private void seleccionarFila() {
-        int filaVista = tabla.getSelectedRow();
-
-        if (filaVista < 0) {
-            nuevo();
+    private void seleccionarTipo(TipoEquipo tipo) {
+        if (tipo == null) {
+            cmbTipo.setSelectedIndex(0);
             return;
         }
-
-        int filaModelo = tabla.convertRowIndexToModel(filaVista);
-        seleccionado = equipos.get(filaModelo);
-
-        txtId.setText(String.valueOf(seleccionado.getId()));
-        txtCodigo.setText(seleccionado.getCodigoInventario());
-        txtNombre.setText(seleccionado.getNombre());
-        txtMarca.setText(texto(seleccionado.getMarca()));
-        txtModelo.setText(texto(seleccionado.getModelo()));
-        txtSerie.setText(texto(seleccionado.getNumeroSerie()));
-        txtObservaciones.setText(texto(seleccionado.getObservaciones()));
-        txtEstado.setText(seleccionado.getEstado().name());
-
-        cmbTipo.setSelectedIndex(-1);
         for (int i = 0; i < cmbTipo.getItemCount(); i++) {
-            if (cmbTipo.getItemAt(i).getId()
-                    == seleccionado.getTipoEquipo().getId()) {
+            if (cmbTipo.getItemAt(i).getId() == tipo.getId()) {
                 cmbTipo.setSelectedIndex(i);
-                break;
+                return;
             }
         }
+        cmbTipo.addItem(tipo);
+        cmbTipo.setSelectedItem(tipo);
+    }
 
-        cmbLaboratorio.setSelectedIndex(-1);
+    private void seleccionarLaboratorio(Laboratorio lab) {
+        if (lab == null) {
+            cmbLaboratorio.setSelectedIndex(0);
+            return;
+        }
         for (int i = 0; i < cmbLaboratorio.getItemCount(); i++) {
-            if (cmbLaboratorio.getItemAt(i).getId()
-                    == seleccionado.getLaboratorio().getId()) {
+            if (cmbLaboratorio.getItemAt(i).getId() == lab.getId()) {
                 cmbLaboratorio.setSelectedIndex(i);
-                break;
-            }
-        }
-
-        actualizarControles();
-    }
-
-    private void recargar() {
-        if (ocupado) {
-            return;
-        }
-
-        ocupado = true;
-        actualizarControles();
-        lblEstado.setText("Cargando equipos, tipos y laboratorios...");
-
-        new SwingWorker<Void, Void>() {
-            private List<Equipo> nuevosEquipos;
-            private List<TipoEquipo> tipos;
-            private List<Laboratorio> laboratorios;
-
-            @Override
-            protected Void doInBackground() {
-                tipos = controller.listarTipos();
-                laboratorios = controller.listarLaboratorios();
-                nuevosEquipos = controller.listar();
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    get();
-
-                    cmbTipo.removeAllItems();
-                    for (TipoEquipo tipo : tipos) {
-                        cmbTipo.addItem(tipo);
-                    }
-
-                    cmbLaboratorio.removeAllItems();
-                    for (Laboratorio laboratorio : laboratorios) {
-                        cmbLaboratorio.addItem(laboratorio);
-                    }
-
-                    equipos = nuevosEquipos;
-                    modeloTabla.setRowCount(0);
-
-                    for (Equipo equipo : equipos) {
-                        modeloTabla.addRow(new Object[]{
-                                equipo.getId(),
-                                equipo.getCodigoInventario(),
-                                equipo.getNombre(),
-                                equipo.getTipoEquipo().getNombre(),
-                                texto(equipo.getMarca()),
-                                texto(equipo.getModelo()),
-                                texto(equipo.getNumeroSerie()),
-                                equipo.getLaboratorio().toString(),
-                                equipo.getEstado().name(),
-                                texto(equipo.getObservaciones())
-                        });
-                    }
-
-                    datosCargados = true;
-                    nuevo();
-                    lblEstado.setText("Equipos cargados: " + equipos.size());
-
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    datosCargados = false;
-                    lblEstado.setText("Carga interrumpida. Pulse Recargar.");
-                } catch (ExecutionException ex) {
-                    datosCargados = false;
-                    mostrarError(ex.getCause(),
-                            "No se pudieron cargar los datos. Pulse Recargar.");
-                    lblEstado.setText("No se completó la carga.");
-                } finally {
-                    ocupado = false;
-                    actualizarControles();
-                }
-            }
-        }.execute();
-    }
-
-    private void guardar(boolean actualizar) {
-        if (ocupado || !datosCargados) {
-            return;
-        }
-
-        if (actualizar && seleccionado == null) {
-            mostrarError(new BusinessException(
-                    "Seleccione un equipo en la tabla."), "");
-            return;
-        }
-
-        Equipo datos = new Equipo(
-                actualizar ? seleccionado.getId() : 0,
-                txtCodigo.getText(),
-                txtNombre.getText(),
-                (TipoEquipo) cmbTipo.getSelectedItem(),
-                txtMarca.getText(),
-                txtModelo.getText(),
-                txtSerie.getText(),
-                (Laboratorio) cmbLaboratorio.getSelectedItem(),
-                actualizar
-                        ? seleccionado.getEstado()
-                        : EstadoEquipo.DISPONIBLE,
-                txtObservaciones.getText()
-        );
-
-        ocupado = true;
-        actualizarControles();
-        lblEstado.setText("Guardando equipo...");
-
-        new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() {
-                if (actualizar) {
-                    controller.actualizar(datos);
-                } else {
-                    controller.crear(datos);
-                }
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                boolean correcto = false;
-
-                try {
-                    get();
-                    correcto = true;
-
-                    JOptionPane.showMessageDialog(
-                            panelPrincipal,
-                            actualizar
-                                    ? "Equipo actualizado correctamente."
-                                    : "Equipo creado correctamente.",
-                            "Operación realizada",
-                            JOptionPane.INFORMATION_MESSAGE);
-
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    datosCargados = false;
-                    lblEstado.setText(
-                            "Operación interrumpida. Recargue antes de continuar.");
-                } catch (ExecutionException ex) {
-                    Throwable causa = ex.getCause();
-
-                    if (!(causa instanceof BusinessException)) {
-                        datosCargados = false;
-                    }
-
-                    mostrarError(causa,
-                            "No se pudo confirmar la operación.\n"
-                                    + "Pulse Recargar antes de volver a intentarlo.");
-
-                    lblEstado.setText("Revise los datos o recargue la lista.");
-                } finally {
-                    ocupado = false;
-                    actualizarControles();
-                }
-
-                if (correcto) {
-                    nuevo();
-                    txtBuscar.setText("");
-                    recargar();
-                }
-            }
-        }.execute();
-    }
-
-    private void actualizarControles() {
-        boolean disponible = !ocupado && datosCargados;
-
-        btnNuevo.setEnabled(disponible);
-        btnGuardar.setEnabled(disponible && seleccionado == null);
-        btnActualizar.setEnabled(disponible && seleccionado != null);
-        btnRecargar.setEnabled(!ocupado);
-        btnGenerarQr.setEnabled(disponible && seleccionado != null);
-        btnLeerQr.setEnabled(disponible);
-
-        tabla.setEnabled(disponible);
-        txtBuscar.setEnabled(disponible);
-
-        txtCodigo.setEnabled(disponible);
-        txtNombre.setEnabled(disponible);
-        txtMarca.setEnabled(disponible);
-        txtModelo.setEnabled(disponible);
-        txtSerie.setEnabled(disponible);
-        txtObservaciones.setEnabled(disponible);
-        cmbTipo.setEnabled(disponible);
-        cmbLaboratorio.setEnabled(disponible);
-    }
-
-    private void filtrar() {
-        String busqueda = txtBuscar.getText().trim();
-
-        ordenador.setRowFilter(busqueda.isEmpty()
-                ? null
-                : RowFilter.regexFilter(
-                "(?iu)" + Pattern.quote(busqueda),
-                1, 2, 3, 4, 5, 6, 7, 8));
-
-        if (!ocupado) {
-            nuevo();
-        }
-    }
-
-    private void mostrarError(Throwable error, String mensajeTecnico) {
-        boolean negocio = error instanceof BusinessException;
-
-        if (!negocio) {
-            error.printStackTrace();
-        }
-
-        JOptionPane.showMessageDialog(
-                panelPrincipal,
-                negocio ? error.getMessage() : mensajeTecnico,
-                negocio ? "Revise los datos" : "Error",
-                negocio
-                        ? JOptionPane.WARNING_MESSAGE
-                        : JOptionPane.ERROR_MESSAGE);
-    }
-
-    private void generarQr() {
-        if (ocupado || seleccionado == null) {
-            return;
-        }
-
-        // Usamos el código del registro seleccionado, no cambios sin guardar.
-        String codigo = seleccionado.getCodigoInventario();
-        int id = seleccionado.getId();
-
-        ejecutarTareaQr(
-                "Generando QR del equipo...",
-                () -> qrController.generar(codigo),
-                imagen -> {
-                    JPanel vista = new JPanel(new BorderLayout(8, 8));
-                    vista.add(
-                            new JLabel(new ImageIcon(imagen)),
-                            BorderLayout.CENTER
-                    );
-                    vista.add(
-                            new JLabel(
-                                    "Código: " + codigo,
-                                    SwingConstants.CENTER
-                            ),
-                            BorderLayout.SOUTH
-                    );
-
-                    int opcion = JOptionPane.showOptionDialog(
-                            panelPrincipal,
-                            vista,
-                            "QR del equipo",
-                            JOptionPane.DEFAULT_OPTION,
-                            JOptionPane.PLAIN_MESSAGE,
-                            null,
-                            new Object[]{"Guardar PNG", "Cerrar"},
-                            "Guardar PNG"
-                    );
-
-                    if (opcion == 0) {
-                        guardarImagenQr(imagen, id);
-                    }
-                }
-        );
-    }
-
-    private JFileChooser crearSelectorQr() throws java.io.IOException {
-        Files.createDirectories(CARPETA_QR);
-
-        JFileChooser selector = new JFileChooser(CARPETA_QR.toFile());
-        selector.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        selector.setAcceptAllFileFilterUsed(false);
-
-        return selector;
-    }
-
-    private void guardarImagenQr(BufferedImage imagen, int id) {
-        if (ocupado) {
-            return;
-        }
-
-        try {
-            JFileChooser selector = crearSelectorQr();
-            selector.setDialogTitle("Guardar QR en el disco D");
-            selector.setFileFilter(
-                    new FileNameExtensionFilter("Imagen PNG (*.png)", "png")
-            );
-
-            // El ID evita usar caracteres inválidos del código como nombre.
-            selector.setSelectedFile(
-                    CARPETA_QR.resolve("equipo-" + id + ".png").toFile()
-            );
-
-            if (selector.showSaveDialog(panelPrincipal)
-                    != JFileChooser.APPROVE_OPTION) {
                 return;
             }
+        }
+        // Equipo de un laboratorio inactivo: se muestra, pero no aparece en nuevas listas.
+        cmbLaboratorio.addItem(lab);
+        cmbLaboratorio.setSelectedItem(lab);
+    }
 
-            Path elegido = selector.getSelectedFile()
-                    .toPath().toAbsolutePath().normalize();
+    // ---------- Utilidades ----------
 
-            if (!elegido.getFileName().toString()
-                    .toLowerCase(java.util.Locale.ROOT).endsWith(".png")) {
-                elegido = elegido.resolveSibling(
-                        elegido.getFileName().toString() + ".png"
-                );
-            }
-
-            // Respetamos tu configuración: guardar únicamente en D.
-            if (!elegido.startsWith(Path.of("D:\\"))) {
-                throw new BusinessException(
-                        "Seleccione una carpeta del disco D para guardar el QR."
-                );
-            }
-
-            if (Files.exists(elegido)) {
-                int respuesta = JOptionPane.showConfirmDialog(
-                        panelPrincipal,
-                        "El archivo ya existe.\n¿Desea reemplazarlo?",
-                        "Confirmar reemplazo",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE
-                );
-
-                if (respuesta != JOptionPane.YES_OPTION) {
-                    return;
-                }
-            }
-
-            final Path destino = elegido;
-
-            ejecutarTareaQr(
-                    "Guardando imagen QR...",
-                    () -> {
-                        qrController.guardarPng(imagen, destino);
-                        return destino;
-                    },
-                    archivo -> JOptionPane.showMessageDialog(
-                            panelPrincipal,
-                            "QR guardado en:\n" + archivo,
-                            "Imagen guardada",
-                            JOptionPane.INFORMATION_MESSAGE
-                    )
-            );
-
+    private void ejecutar(Runnable accion) {
+        try {
+            accion.run();
         } catch (BusinessException ex) {
-            mostrarError(ex, "");
-        } catch (Exception ex) {
-            mostrarError(
-                    ex,
-                    "No se pudo preparar el guardado en D:\\SIGELAB\\QR."
-            );
+            aviso(ex.getMessage());
+        } catch (RuntimeException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(panelPrincipal,
+                    "No se pudo completar la operación. Intente de nuevo.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void leerQr() {
-        if (ocupado || !datosCargados) {
-            return;
-        }
-
-        try {
-            JFileChooser selector = crearSelectorQr();
-            selector.setDialogTitle("Seleccionar imagen con código QR");
-            selector.setFileFilter(
-                    new FileNameExtensionFilter(
-                            "Imágenes PNG y JPG",
-                            "png", "jpg", "jpeg"
-                    )
-            );
-
-            if (selector.showOpenDialog(panelPrincipal)
-                    != JFileChooser.APPROVE_OPTION) {
-                return;
-            }
-
-            Path archivo = selector.getSelectedFile().toPath();
-
-            ejecutarTareaQr(
-                    "Leyendo QR y consultando el equipo...",
-                    () -> qrController.leer(archivo),
-                    this::mostrarEquipoQr
-            );
-
-        } catch (Exception ex) {
-            mostrarError(
-                    ex,
-                    "No se pudo abrir el selector de imágenes en D:\\SIGELAB\\QR."
-            );
-        }
+    private void aviso(String mensaje) {
+        JOptionPane.showMessageDialog(panelPrincipal, mensaje,
+                "Aviso", JOptionPane.WARNING_MESSAGE);
     }
 
-    private void mostrarEquipoQr(Equipo equipo) {
-        String informacion =
-                "ID: " + equipo.getId()
-                        + "\nCódigo: " + equipo.getCodigoInventario()
-                        + "\nNombre: " + equipo.getNombre()
-                        + "\nTipo: " + equipo.getTipoEquipo().getNombre()
-                        + "\nMarca: " + texto(equipo.getMarca())
-                        + "\nModelo: " + texto(equipo.getModelo())
-                        + "\nSerie: " + texto(equipo.getNumeroSerie())
-                        + "\nLaboratorio: " + equipo.getLaboratorio()
-                        + "\nEstado actual: " + equipo.getEstado().name()
-                        + "\nObservaciones: " + texto(equipo.getObservaciones())
-                        + "\n\nEsta consulta no modifica el estado del equipo.";
+    private void info(String mensaje) {
+        JOptionPane.showMessageDialog(panelPrincipal, mensaje,
+                "Equipos", JOptionPane.INFORMATION_MESSAGE);
+    }
 
-        JTextArea detalle = new JTextArea(informacion, 15, 45);
-        detalle.setEditable(false);
-        detalle.setLineWrap(true);
-        detalle.setWrapStyleWord(true);
-        detalle.setCaretPosition(0);
+    private static String nz(String texto) {
+        return texto == null ? "" : texto;
+    }
 
-        JOptionPane.showMessageDialog(
-                panelPrincipal,
-                new JScrollPane(detalle),
-                "Equipo identificado por QR",
-                JOptionPane.INFORMATION_MESSAGE
-        );
+    private static String textoItem(Object valor) {
+        if (valor instanceof TipoEquipo t) {
+            return t.getId() == 0 ? "-- Seleccione --" : t.getNombre();
+        }
+        if (valor instanceof Laboratorio l) {
+            return l.getId() == 0 ? "-- Seleccione --"
+                    : l.getCodigo() + " - " + l.getNombre();
+        }
+        return "";
+    }
+
+    {
+// GUI initializer generated by IntelliJ IDEA GUI Designer
+// >>> IMPORTANT!! <<<
+// DO NOT EDIT OR ADD ANY CODE HERE!
+        $$$setupUI$$$();
     }
 
     /**
-     * Ejecuta la lectura, generación o guardado fuera del hilo de la pantalla.
-     * La actualización de la interfaz ocurre en done().
+     * Method generated by IntelliJ IDEA GUI Designer
+     * >>> IMPORTANT!! <<<
+     * DO NOT edit this method OR call it in your code!
+     *
+     * @noinspection ALL
      */
-    private <T> void ejecutarTareaQr(
-            String mensaje,
-            Callable<T> tarea,
-            Consumer<T> alCompletar) {
-
-        if (ocupado) {
-            return;
-        }
-
-        ocupado = true;
-        actualizarControles();
-        lblEstado.setText(mensaje);
-
-        new SwingWorker<T, Void>() {
-            @Override
-            protected T doInBackground() throws Exception {
-                return tarea.call();
-            }
-
-            @Override
-            protected void done() {
-                T resultado = null;
-                boolean correcto = false;
-
-                try {
-                    resultado = get();
-                    correcto = true;
-                    lblEstado.setText("Operación QR completada.");
-
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    lblEstado.setText("Operación QR interrumpida.");
-
-                } catch (ExecutionException ex) {
-                    mostrarError(
-                            ex.getCause(),
-                            "No se pudo completar la operación QR."
-                    );
-                    lblEstado.setText("No se completó la operación QR.");
-
-                } finally {
-                    ocupado = false;
-                    actualizarControles();
-                }
-
-                if (correcto) {
-                    alCompletar.accept(resultado);
-                }
-            }
-        }.execute();
+    private void $$$setupUI$$$() {
+        panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new GridLayoutManager(4, 1, new Insets(10, 10, 10, 10), -1, -1));
+        final JPanel panel1 = new JPanel();
+        panel1.setLayout(new GridLayoutManager(10, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panelPrincipal.add(panel1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
+        final JLabel label1 = new JLabel();
+        label1.setText("ID:");
+        panel1.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtId = new JTextField();
+        txtId.setEnabled(false);
+        panel1.add(txtId, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label2 = new JLabel();
+        label2.setText("Código de inventario:");
+        panel1.add(label2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtCodigo = new JTextField();
+        panel1.add(txtCodigo, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label3 = new JLabel();
+        label3.setText("Nombre:");
+        panel1.add(label3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtNombre = new JTextField();
+        panel1.add(txtNombre, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label4 = new JLabel();
+        label4.setText("Tipo de equipo:");
+        panel1.add(label4, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cmbTipo = new JComboBox();
+        final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
+        cmbTipo.setModel(defaultComboBoxModel1);
+        panel1.add(cmbTipo, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label5 = new JLabel();
+        label5.setText("Marca:");
+        panel1.add(label5, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtMarca = new JTextField();
+        panel1.add(txtMarca, new GridConstraints(4, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label6 = new JLabel();
+        label6.setText("Modelo:");
+        panel1.add(label6, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtModelo = new JTextField();
+        panel1.add(txtModelo, new GridConstraints(5, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label7 = new JLabel();
+        label7.setText("Número de serie:");
+        panel1.add(label7, new GridConstraints(6, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtSerie = new JTextField();
+        panel1.add(txtSerie, new GridConstraints(6, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label8 = new JLabel();
+        label8.setText("Laboratorio:");
+        panel1.add(label8, new GridConstraints(7, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cmbLaboratorio = new JComboBox();
+        final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
+        cmbLaboratorio.setModel(defaultComboBoxModel2);
+        panel1.add(cmbLaboratorio, new GridConstraints(7, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label9 = new JLabel();
+        label9.setText("Estado:");
+        panel1.add(label9, new GridConstraints(8, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtEstado = new JTextField();
+        txtEstado.setEnabled(false);
+        panel1.add(txtEstado, new GridConstraints(8, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label10 = new JLabel();
+        label10.setText("Observaciones:");
+        panel1.add(label10, new GridConstraints(9, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtObservaciones = new JTextField();
+        panel1.add(txtObservaciones, new GridConstraints(9, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        panelBotones = new JPanel();
+        panelBotones.setLayout(new GridLayoutManager(1, 7, new Insets(0, 0, 0, 0), -1, -1));
+        panelPrincipal.add(panelBotones, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
+        btnNuevo = new JButton();
+        btnNuevo.setText("Nuevo");
+        panelBotones.add(btnNuevo, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        btnGuardar = new JButton();
+        btnGuardar.setText("Guardar");
+        panelBotones.add(btnGuardar, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        btnActualizar = new JButton();
+        btnActualizar.setText("Actualizar");
+        panelBotones.add(btnActualizar, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        btnRecargar = new JButton();
+        btnRecargar.setText("Recargar");
+        panelBotones.add(btnRecargar, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        btnGenerarQr = new JButton();
+        btnGenerarQr.setText("Generar QR");
+        panelBotones.add(btnGenerarQr, new GridConstraints(0, 4, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        btnLeerQr = new JButton();
+        btnLeerQr.setText("Leer QR");
+        panelBotones.add(btnLeerQr, new GridConstraints(0, 5, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final Spacer spacer1 = new Spacer();
+        panelBotones.add(spacer1, new GridConstraints(0, 6, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        final JPanel panel2 = new JPanel();
+        panel2.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panelPrincipal.add(panel2, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
+        final JLabel label11 = new JLabel();
+        label11.setText("Buscar:");
+        panel2.add(label11, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtBuscar = new JTextField();
+        panel2.add(txtBuscar, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JScrollPane scrollPane1 = new JScrollPane();
+        panelPrincipal.add(scrollPane1, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        tblEquipos = new JTable();
+        scrollPane1.setViewportView(tblEquipos);
     }
 
-    private String texto(String valor) {
-        return valor == null ? "" : valor;
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$() {
+        return panelPrincipal;
+    }
+
+    private static class ItemRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> lista, Object valor,
+                                                      int indice, boolean seleccionado, boolean foco) {
+            super.getListCellRendererComponent(lista, valor, indice, seleccionado, foco);
+            setText(textoItem(valor));
+            return this;
+        }
     }
 }
