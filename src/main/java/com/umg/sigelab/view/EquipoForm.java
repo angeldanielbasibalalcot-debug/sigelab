@@ -9,7 +9,9 @@ import com.umg.sigelab.model.Equipo;
 import com.umg.sigelab.model.EstadoEquipo;
 import com.umg.sigelab.model.Laboratorio;
 import com.umg.sigelab.model.TipoEquipo;
+import com.umg.sigelab.util.QrUtil;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -17,6 +19,9 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -70,9 +75,8 @@ public class EquipoForm {
         txtId.setEditable(false);
         txtEstado.setEditable(false);
         txtEstado.setToolTipText("El estado lo cambian los préstamos, devoluciones y mantenimientos.");
-        // El codigo QR se integra en el siguiente paso (libreria ZXing).
-        btnVerQr.setEnabled(false);
-        btnVerQr.setToolTipText("Disponible cuando se integre el código QR.");
+        btnVerQr.setToolTipText("Muestra el código QR del equipo seleccionado.");
+        btnVerQr.addActionListener(e -> verQr());
 
         btnNuevo.addActionListener(e -> nuevo());
         btnGuardar.addActionListener(e -> guardar());
@@ -195,6 +199,7 @@ public class EquipoForm {
         txtObservaciones.setText(vacioSiNulo(e.getObservaciones()));
         seleccionarTipo(e.getTipo());
         seleccionarLaboratorio(e.getLaboratorio());
+        btnVerQr.setEnabled(true);
     }
 
     private void seleccionarTipo(TipoEquipo tipo) {
@@ -240,6 +245,7 @@ public class EquipoForm {
         cmbTipo.setSelectedIndex(-1);
         cmbLaboratorio.setSelectedIndex(-1);
         txtCodigo.requestFocusInWindow();
+        btnVerQr.setEnabled(false);
     }
 
     private Equipo leerFormulario() {
@@ -302,6 +308,45 @@ public class EquipoForm {
             informar("Equipo actualizado correctamente.");
             recargar();
         });
+    }
+
+    /**
+     * Muestra el QR del equipo seleccionado y permite guardarlo como imagen PNG.
+     */
+    private void verQr() {
+        if (seleccionado == null) {
+            advertir("Seleccione un equipo de la tabla para ver su código QR.");
+            return;
+        }
+        final Equipo equipo = seleccionado;
+        ejecutar(() -> {
+            BufferedImage imagen = QrUtil.generarImagen(equipo.getCodigoInventario(), 300);
+            Object[] opciones = {"Guardar imagen", "Cerrar"};
+            int respuesta = JOptionPane.showOptionDialog(panelPrincipal, new JLabel(new ImageIcon(imagen)),
+                    "Código QR de " + equipo.getCodigoInventario() + " - " + equipo.getNombre(),
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, opciones, opciones[1]);
+            if (respuesta == 0) {
+                guardarQr(imagen, equipo);
+            }
+        });
+    }
+
+    private void guardarQr(BufferedImage imagen, Equipo equipo) {
+        JFileChooser selector = new JFileChooser();
+        selector.setSelectedFile(new File("QR-" + equipo.getCodigoInventario() + ".png"));
+        if (selector.showSaveDialog(panelPrincipal) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File destino = selector.getSelectedFile();
+        if (!destino.getName().toLowerCase().endsWith(".png")) {
+            destino = new File(destino.getParentFile(), destino.getName() + ".png");
+        }
+        try {
+            ImageIO.write(imagen, "png", destino);
+            informar("Código QR guardado en:\n" + destino.getAbsolutePath());
+        } catch (IOException e) {
+            advertir("No se pudo guardar la imagen. Verifique la carpeta elegida.");
+        }
     }
 
     // ------------------------------------------------------------------
