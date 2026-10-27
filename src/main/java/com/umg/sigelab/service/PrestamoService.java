@@ -6,6 +6,7 @@ import com.umg.sigelab.repository.PrestamoRepository;
 import java.util.List;
 
 import com.umg.sigelab.model.Prestamo;
+import com.umg.sigelab.model.DetallePrestamo;
 
 public class PrestamoService {
 
@@ -23,4 +24,20 @@ public int guardarPrestamo(Prestamo prestamo) {
     return repository.guardarPrestamo(prestamo);
 
     }
+    public void guardarDetallePrestamo(
+            DetallePrestamo detalle) {
+
+        repository.guardarDetallePrestamo(
+                detalle);
+
+    }
+
+    public void actualizarEstadoEquipo(
+            int equipoId) {
+
+        repository.actualizarEstadoEquipo(
+                equipoId);
+
+    }
+
 }

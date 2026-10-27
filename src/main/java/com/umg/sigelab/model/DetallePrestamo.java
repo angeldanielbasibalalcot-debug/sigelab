@@ -1,46 +1,79 @@
+package com.umg.sigelab.model;
 
-    package com.umg.sigelab.model;
+import java.util.Date;
 
-    public class DetallePrestamo {
+public class DetallePrestamo {
 
-        private int idDetalle;
-        private int idPrestamo;
-        private int idEquipo;
-        private int cantidad;
+    private int id;
 
-        public int getIdDetalle() {
-            return idDetalle;
-        }
+    private int prestamoId;
 
-        public void setIdDetalle(int idDetalle) {
-            this.idDetalle = idDetalle;
-        }
+    private int equipoId;
 
-        public int getIdPrestamo() {
-            return idPrestamo;
-        }
+    private Date fechaDevolucion;
 
-        public void setIdPrestamo(int idPrestamo) {
-            this.idPrestamo = idPrestamo;
-        }
+    private String condicionDevolucion;
 
-        public int getIdEquipo() {
-            return idEquipo;
-        }
+    private String observacionDevolucion;
 
-        public void setIdEquipo(int idEquipo) {
-            this.idEquipo  = idEquipo;
-        }
+    private Integer usuarioRecibeId;
 
-        public int getCantidad() {
-            return cantidad;
-        }
-
-        public void setCantidad(int cantidad) {
-            this.cantidad = cantidad;
-        }
+    public int getId() {
+        return id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getPrestamoId() {
+        return prestamoId;
+    }
+
+    public void setPrestamoId(int prestamoId) {
+        this.prestamoId = prestamoId;
+    }
+
+    public int getEquipoId() {
+        return equipoId;
+    }
+
+    public void setEquipoId(int equipoId) {
+        this.equipoId = equipoId;
+    }
+
+    public Date getFechaDevolucion() {
+        return fechaDevolucion;
+    }
+
+    public void setFechaDevolucion(Date fechaDevolucion) {
+        this.fechaDevolucion = fechaDevolucion;
+    }
+
+    public String getCondicionDevolucion() {
+        return condicionDevolucion;
+    }
+
+    public void setCondicionDevolucion(String condicionDevolucion) {
+        this.condicionDevolucion = condicionDevolucion;
+    }
+
+    public String getObservacionDevolucion() {
+        return observacionDevolucion;
+    }
+
+    public void setObservacionDevolucion(String observacionDevolucion) {
+        this.observacionDevolucion = observacionDevolucion;
+    }
+
+    public Integer getUsuarioRecibeId() {
+        return usuarioRecibeId;
+    }
+
+    public void setUsuarioRecibeId(Integer usuarioRecibeId) {
+        this.usuarioRecibeId = usuarioRecibeId;
+    }
+}
 
 
 

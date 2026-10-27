@@ -11,6 +11,7 @@ import java.util.List;
 import com.umg.sigelab.model.Prestamo;
 import com.umg.sigelab.model.EstadoPrestamo;
 import com.umg.sigelab.util.SesionActual;
+import com.umg.sigelab.model.DetallePrestamo;
 
 import java.util.Date;
 
@@ -119,6 +120,26 @@ public class PrestamoForm {
 
                 int idGenerado =
                         service.guardarPrestamo(prestamo);
+                for (int i = 0; i < modeloLista.size(); i++) {
+
+                    Equipo equipo =
+                            modeloLista.getElementAt(i);
+
+                    DetallePrestamo detalle =
+                            new DetallePrestamo();
+
+                    detalle.setPrestamoId(
+                            idGenerado);
+
+                    detalle.setEquipoId(
+                            equipo.getId());
+
+                    service.guardarDetallePrestamo(
+                            detalle);
+
+                    service.actualizarEstadoEquipo(
+                            equipo.getId());
+                }
 
                 JOptionPane.showMessageDialog(
                         panelPrincipal,

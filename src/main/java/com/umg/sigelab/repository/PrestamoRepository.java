@@ -13,6 +13,9 @@ import com.umg.sigelab.model.Prestamo;
 
 import java.sql.Statement;
 
+import com.umg.sigelab.model.DetallePrestamo;
+
+
 public class PrestamoRepository {
 
     public void probarConexion() {
@@ -123,5 +126,63 @@ public class PrestamoRepository {
 
         return 0;
     }
+    public void guardarDetallePrestamo(
+            DetallePrestamo detalle) {
 
+        String sql =
+                "INSERT INTO DetallePrestamo (" +
+                        "prestamo_id," +
+                        "equipo_id" +
+                        ") VALUES (?,?)";
+
+        try (
+                Connection con =
+                        ConexionBD.obtenerConexion();
+
+                PreparedStatement ps =
+                        con.prepareStatement(sql)
+        ){
+
+            ps.setInt(
+                    1,
+                    detalle.getPrestamoId());
+
+            ps.setInt(
+                    2,
+                    detalle.getEquipoId());
+
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        }
+    }
+    public void actualizarEstadoEquipo(
+            int equipoId) {
+
+        String sql =
+                "UPDATE Equipo " +
+                        "SET estado = 'PRESTADO' " +
+                        "WHERE id = ?";
+
+        try (
+                Connection con =
+                        ConexionBD.obtenerConexion();
+
+                PreparedStatement ps =
+                        con.prepareStatement(sql)
+        ) {
+
+            ps.setInt(1, equipoId);
+
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        }
+    }
 }
