@@ -8,6 +8,12 @@ import com.umg.sigelab.service.PrestamoService;
 import javax.swing.JComboBox;
 import java.util.List;
 
+import com.umg.sigelab.model.Prestamo;
+import com.umg.sigelab.model.EstadoPrestamo;
+import com.umg.sigelab.util.SesionActual;
+
+import java.util.Date;
+
 public class PrestamoForm {
 
     private JPanel panelPrincipal;
@@ -86,6 +92,50 @@ public class PrestamoForm {
                 new JScrollPane(listaEquipos));
 
         centro.add(btnRegistrar);
+        btnRegistrar.addActionListener(e -> {
+
+            try {
+
+                Prestamo prestamo =
+                        new Prestamo();
+
+                prestamo.setSolicitante(
+                        txtSolicitante.getText());
+
+                prestamo.setFechaPrestamo(
+                        new Date());
+
+                prestamo.setFechaEsperadaDevolucion(
+                        new Date());
+
+                prestamo.setUsuarioRegistraId(
+                        SesionActual.getUsuario().getId());
+
+                prestamo.setEstado(
+                        EstadoPrestamo.ACTIVO);
+
+                prestamo.setObservaciones(
+                        "Prestamo generado desde formulario");
+
+                int idGenerado =
+                        service.guardarPrestamo(prestamo);
+
+                JOptionPane.showMessageDialog(
+                        panelPrincipal,
+                        "Prestamo registrado. ID: "
+                                + idGenerado);
+
+            } catch (Exception ex) {
+
+                ex.printStackTrace();
+
+                JOptionPane.showMessageDialog(
+                        panelPrincipal,
+                        ex.getMessage());
+
+            }
+
+        });
 
         btnAgregar.addActionListener(e -> {
 

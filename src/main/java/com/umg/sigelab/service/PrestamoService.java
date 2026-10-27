@@ -5,6 +5,8 @@ import com.umg.sigelab.repository.PrestamoRepository;
 
 import java.util.List;
 
+import com.umg.sigelab.model.Prestamo;
+
 public class PrestamoService {
 
     private PrestamoRepository repository =
@@ -13,6 +15,12 @@ public class PrestamoService {
     public List<Equipo> listarEquiposDisponibles() {
 
         return repository.listarEquiposDisponibles();
+
+
+}
+public int guardarPrestamo(Prestamo prestamo) {
+
+    return repository.guardarPrestamo(prestamo);
 
     }
 }
