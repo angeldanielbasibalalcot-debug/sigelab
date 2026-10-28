@@ -97,6 +97,11 @@ public class MainFrame extends JFrame {
                     new MantenimientoForm()
                             .getPanelPrincipal();
 
+            case MOD_AUDITORIA ->
+                    new AuditoriaForm()
+                            .getPanelPrincipal();
+
+
             default ->
                     panelEnConstruccion(modulo);
         };
