@@ -5,10 +5,13 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.umg.sigelab.controller.PrestamoController;
 import com.umg.sigelab.exception.BusinessException;
 import com.umg.sigelab.model.Equipo;
+import com.umg.sigelab.model.EstadoEquipo;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -17,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Pantalla de registro de prestamos (RN-05, RN-06, RN-07, RN-08, RN-09, RN-14).
+ * Pantalla de registro de prestamos (RN-05, RN-06, RN-07, RN-08, RN-09, RN-14, RN-19).
  * No contiene reglas de negocio ni SQL: solo captura datos y llama al Controller.
  */
 public class PrestamoForm {
@@ -33,6 +36,7 @@ public class PrestamoForm {
     private JComboBox<Equipo> cmbEquipo;
     private JButton btnAgregar;
     private JButton btnQuitar;
+    private JButton btnLeerQr;
     private JTable tblEquipos;
     private JLabel lblTotal;
     private JButton btnRegistrar;
@@ -78,6 +82,7 @@ public class PrestamoForm {
     private void configurarEventos() {
         btnAgregar.addActionListener(e -> agregarEquipo());
         btnQuitar.addActionListener(e -> quitarEquipo());
+        btnLeerQr.addActionListener(e -> ejecutar(this::leerQr));
         btnRegistrar.addActionListener(e -> registrarPrestamo());
         btnLimpiar.addActionListener(e -> limpiar());
     }
@@ -100,17 +105,57 @@ public class PrestamoForm {
             aviso("Seleccione un equipo de la lista.");
             return;
         }
+        if (agregarALista(elegido)) {
+            cmbEquipo.setSelectedIndex(-1);
+        }
+    }
+
+    /**
+     * Agrega un equipo a la tabla del prestamo (RN-06: sin repetidos).
+     * Lo usan el boton Agregar y el boton Leer QR.
+     *
+     * @return true si se agrego, false si ya estaba en la lista
+     */
+    private boolean agregarALista(Equipo equipo) {
         for (Equipo e : seleccionados) {
-            if (e.getId() == elegido.getId()) {
-                aviso("El equipo " + elegido.getCodigoInventario()
+            if (e.getId() == equipo.getId()) {
+                aviso("El equipo " + equipo.getCodigoInventario()
                         + " ya fue agregado a este pr\u00e9stamo.");
-                return;
+                return false;
             }
         }
-        seleccionados.add(elegido);
-        modeloTabla.addRow(new Object[]{elegido.getCodigoInventario(), elegido.getNombre()});
-        cmbEquipo.setSelectedIndex(-1);
+        seleccionados.add(equipo);
+        modeloTabla.addRow(new Object[]{equipo.getCodigoInventario(), equipo.getNombre()});
         actualizarTotal();
+        return true;
+    }
+
+    /**
+     * RN-19: leer el QR solo identifica el equipo; no cambia ningun estado.
+     * CP-09: DISPONIBLE se agrega a la lista. CP-10: cualquier otro estado se
+     * identifica pero queda bloqueado. El rechazo definitivo (RN-20) sigue
+     * en PrestamoService.crearPrestamo.
+     */
+    private void leerQr() {
+        JFileChooser selector = new JFileChooser();
+        selector.setDialogTitle("Seleccione la imagen del c\u00f3digo QR");
+        selector.setFileFilter(new FileNameExtensionFilter("Im\u00e1genes (PNG, JPG)", "png", "jpg", "jpeg"));
+        if (selector.showOpenDialog(panelPrincipal) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        Path imagen = selector.getSelectedFile().toPath();
+        Equipo equipo = controller.identificarPorQr(imagen);
+
+        if (equipo.getEstado() == EstadoEquipo.DISPONIBLE) {
+            if (agregarALista(equipo)) {
+                info("Equipo " + equipo.getCodigoInventario() + " (" + equipo.getNombre()
+                        + ") identificado y agregado al pr\u00e9stamo.");
+            }
+        } else {
+            aviso("Equipo " + equipo.getCodigoInventario() + " (" + equipo.getNombre()
+                    + ") identificado, pero est\u00e1 en estado " + equipo.getEstado()
+                    + " y no puede prestarse.");
+        }
     }
 
     private void quitarEquipo() {
@@ -206,7 +251,7 @@ public class PrestamoForm {
      */
     private void $$$setupUI$$$() {
         panelPrincipal = new JPanel();
-        panelPrincipal.setLayout(new GridLayoutManager(6, 4, new Insets(10, 10, 10, 10), -1, -1));
+        panelPrincipal.setLayout(new GridLayoutManager(7, 4, new Insets(10, 10, 10, 10), -1, -1));
         final JLabel label1 = new JLabel();
         label1.setText("Solicitante:");
         panelPrincipal.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -233,13 +278,19 @@ public class PrestamoForm {
         btnQuitar = new JButton();
         btnQuitar.setText("Quitar seleccionado");
         panelPrincipal.add(btnQuitar, new GridConstraints(3, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label5 = new JLabel();
+        label5.setText("Identificar por QR:");
+        panelPrincipal.add(label5, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        btnLeerQr = new JButton();
+        btnLeerQr.setText("Leer QR");
+        panelPrincipal.add(btnLeerQr, new GridConstraints(4, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JScrollPane scrollPane1 = new JScrollPane();
-        panelPrincipal.add(scrollPane1, new GridConstraints(4, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        panelPrincipal.add(scrollPane1, new GridConstraints(5, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         tblEquipos = new JTable();
         scrollPane1.setViewportView(tblEquipos);
         final JPanel panel1 = new JPanel();
         panel1.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
-        panelPrincipal.add(panel1, new GridConstraints(5, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panelPrincipal.add(panel1, new GridConstraints(6, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         lblTotal = new JLabel();
         lblTotal.setText("Equipos en el préstamo: 0");
         panel1.add(lblTotal, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
