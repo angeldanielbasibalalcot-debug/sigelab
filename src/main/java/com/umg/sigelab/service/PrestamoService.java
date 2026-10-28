@@ -12,6 +12,7 @@ import com.umg.sigelab.repository.PrestamoRepository;
 import com.umg.sigelab.util.SesionActual;
 import com.umg.sigelab.util.Transaccion;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -20,13 +21,14 @@ import java.util.HashSet;
 import java.util.List;
 
 /**
- * Reglas de negocio de prestamos (RN-05 a RN-09, RN-14, RN-18, RN-20).
+ * Reglas de negocio de prestamos (RN-05 a RN-09, RN-14, RN-18, RN-19, RN-20).
  * La confirmacion es una sola transaccion: encabezado, detalle, estados y auditoria.
  */
 public class PrestamoService {
 
     private final PrestamoRepository prestamoRepository = new PrestamoRepository();
     private final AuditoriaRepository auditoriaRepository = new AuditoriaRepository();
+    private final QrService qrService = new QrService();
 
     private void exigirPermiso() {
         AutorizacionService.exigirRol(NombreRol.ADMIN, NombreRol.ENCARGADO);
@@ -35,6 +37,16 @@ public class PrestamoService {
     public List<Equipo> listarEquiposDisponibles() {
         exigirPermiso();
         return prestamoRepository.listarEquiposDisponibles();
+    }
+
+    /**
+     * Identifica un equipo a partir de la imagen de su QR (RN-19, CP-09, CP-10).
+     * Solo lee: no cambia el estado del equipo ni rechaza por estado. Quien llama
+     * decide si lo agrega al prestamo; crearPrestamo vuelve a validar (RN-07, RN-08).
+     */
+    public Equipo identificarPorQr(Path imagen) {
+        exigirPermiso();
+        return qrService.leer(imagen);
     }
 
     public int crearPrestamo(String solicitante, LocalDate fechaEsperada,

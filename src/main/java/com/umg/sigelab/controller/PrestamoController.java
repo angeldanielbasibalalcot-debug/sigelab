@@ -3,6 +3,7 @@ package com.umg.sigelab.controller;
 import com.umg.sigelab.model.Equipo;
 import com.umg.sigelab.service.PrestamoService;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -16,6 +17,11 @@ public class PrestamoController {
 
     public List<Equipo> listarEquiposDisponibles() {
         return prestamoService.listarEquiposDisponibles();
+    }
+
+    /** Lee el QR de una imagen y devuelve el equipo real. No cambia estados (RN-19). */
+    public Equipo identificarPorQr(Path imagen) {
+        return prestamoService.identificarPorQr(imagen);
     }
 
     public int crearPrestamo(String solicitante, LocalDate fechaEsperada,
