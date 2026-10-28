@@ -93,6 +93,10 @@ public class MainFrame extends JFrame {
                     new DevolucionForm()
                             .getPanelPrincipal();
 
+            case MOD_REPORTES ->
+                    new ReporteForm()
+                            .getPanelPrincipal();
+
             case MOD_MANTENIMIENTO ->
                     new MantenimientoForm()
                             .getPanelPrincipal();
