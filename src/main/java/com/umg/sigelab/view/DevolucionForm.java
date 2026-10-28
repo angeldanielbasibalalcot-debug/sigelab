@@ -1,204 +1,181 @@
 package com.umg.sigelab.view;
 
-import javax.swing.*;
-import java.awt.*;
+import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.umg.sigelab.controller.DevolucionController;
+import com.umg.sigelab.exception.BusinessException;
 import com.umg.sigelab.model.CondicionDevolucion;
-import com.umg.sigelab.service.DevolucionService;
-import com.umg.sigelab.util.SesionActual;
+import com.umg.sigelab.model.EquipoPrestado;
 
-import com.umg.sigelab.model.DetallePrestamoCombo;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Pantalla de devoluciones (RN-10 a RN-13, RN-16).
+ * No contiene reglas de negocio ni SQL: solo captura datos y llama al Controller.
+ */
 public class DevolucionForm {
 
+    private static final DateTimeFormatter FORMATO_FECHA =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    // Componentes enlazados al archivo DevolucionForm.form
     private JPanel panelPrincipal;
+    private JLabel lblTotal;
+    private JButton btnActualizar;
+    private JTable tblPendientes;
+    private JComboBox<CondicionDevolucion> cmbCondicion;
+    private JTextField txtObservacion;
+    private JButton btnDevolver;
 
-    private DevolucionService service =
-            new DevolucionService();
-
+    private final DevolucionController controller = new DevolucionController();
+    private final DefaultTableModel modeloTabla = new DefaultTableModel(
+            new Object[]{"Pr\u00e9stamo", "Solicitante", "C\u00f3digo", "Equipo", "Fecha esperada"}, 0) {
+        @Override
+        public boolean isCellEditable(int fila, int columna) {
+            return false;
+        }
+    };
+    private final List<EquipoPrestado> pendientes = new ArrayList<>();
 
     public DevolucionForm() {
+        configurarTabla();
+        configurarCombo();
+        configurarEventos();
+        cargarPendientes();
+    }
 
-        panelPrincipal =
-                new JPanel(
-                        new BorderLayout());
-        panelPrincipal.setBorder(
-                BorderFactory.createEmptyBorder(
-                        15, 15, 15, 15));
+    private void configurarTabla() {
+        tblPendientes.setModel(modeloTabla);
+        tblPendientes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    }
 
-        JLabel titulo =
-                new JLabel(
-                        "Modulo de Devoluciones",
-                        SwingConstants.CENTER);
+    private void configurarCombo() {
+        cmbCondicion.setModel(new DefaultComboBoxModel<>(CondicionDevolucion.values()));
+        cmbCondicion.setSelectedIndex(0);
+    }
 
-        titulo.setFont(
-                titulo.getFont()
-                        .deriveFont(
-                                Font.BOLD,
-                                20f));
+    private void configurarEventos() {
+        btnActualizar.addActionListener(e -> cargarPendientes());
+        btnDevolver.addActionListener(e -> devolver());
+    }
 
-        panelPrincipal.add(
-                titulo,
-                BorderLayout.NORTH);
-
-        JPanel centro =
-                new JPanel(
-                        new GridBagLayout());
-
-        centro.setBorder(
-                BorderFactory.createTitledBorder(
-                        "Registrar Devolucion"));
-
-        JComboBox<DetallePrestamoCombo> cboDetalle =
-                new JComboBox<>();
-
-        List<DetallePrestamoCombo> pendientes =
-                service.listarPendientes();
-
-        for (DetallePrestamoCombo item : pendientes) {
-
-            cboDetalle.addItem(item);
-
-        }
-
-        JComboBox<CondicionDevolucion> cboCondicion =
-                new JComboBox<>(
-                        CondicionDevolucion.values());
-
-        JTextArea txtObservacion =
-                new JTextArea(5, 20);
-
-        JButton btnDevolver =
-                new JButton(
-                        "Registrar Devolucion");
-
-        agregarCampo(
-                centro,
-                0,
-                "Equipo Prestado:",
-                cboDetalle);
-
-        agregarCampo(
-                centro,
-                1,
-                "Condicion:",
-                cboCondicion);
-
-        agregarCampo(
-                centro,
-                2,
-                "Observacion:",
-                new JScrollPane(
-                        txtObservacion));
-        GridBagConstraints boton =
-                new GridBagConstraints();
-
-        boton.gridx = 0;
-        boton.gridy = 3;
-        boton.gridwidth = 2;
-        boton.insets =
-                new Insets(
-                        10, 10, 10, 10);
-
-        centro.add(
-                btnDevolver,
-                boton);
-
-        centro.add(btnDevolver);
-        btnDevolver.addActionListener(e -> {
-
-            try {
-
-                DetallePrestamoCombo seleccionado =
-                        (DetallePrestamoCombo)
-                                cboDetalle.getSelectedItem();
-
-                if (seleccionado == null) {
-
-                    JOptionPane.showMessageDialog(
-                            panelPrincipal,
-                            "No existen equipos pendientes.");
-
-                    return;
-                }
-
-                int detalleId =
-                        seleccionado.getDetalleId();
-
-
-                service.devolverEquipo(
-                        detalleId,
-                        cboCondicion.getSelectedItem()
-                                .toString(),
-                        txtObservacion.getText(),
-                        SesionActual
-                                .getUsuario()
-                                .getId());
-
-                service.actualizarEstadoDisponible(
-                        detalleId);
-
-                service.finalizarPrestamo(
-                        detalleId);
-
-                txtObservacion.setText("");
-
-                cboCondicion.setSelectedIndex(0);
-
-                cboDetalle.removeItem(
-                        seleccionado);
-
-                JOptionPane.showMessageDialog(
-                        panelPrincipal,
-                        "\"Devolucion registrada correctamente.\\nEl equipo volvió a estado DISPONIBLE.\"");
-
-            } catch (Exception ex) {
-
-                ex.printStackTrace();
-
-                JOptionPane.showMessageDialog(
-                        panelPrincipal,
-                        ex.getMessage());
+    private void cargarPendientes() {
+        ejecutar(() -> {
+            List<EquipoPrestado> lista = controller.listarPendientes();
+            pendientes.clear();
+            pendientes.addAll(lista);
+            modeloTabla.setRowCount(0);
+            for (EquipoPrestado p : lista) {
+                modeloTabla.addRow(new Object[]{
+                        p.prestamoId(),
+                        p.solicitante(),
+                        p.codigoInventario(),
+                        p.nombreEquipo(),
+                        p.fechaEsperada() == null ? "" : p.fechaEsperada().format(FORMATO_FECHA)});
             }
-
+            lblTotal.setText("Equipos pendientes de devoluci\u00f3n: " + lista.size());
         });
+    }
 
-        panelPrincipal.add(
-                centro,
-                BorderLayout.CENTER);
+    private void devolver() {
+        int fila = tblPendientes.getSelectedRow();
+        if (fila < 0) {
+            aviso("Seleccione en la tabla el equipo que se va a devolver.");
+            return;
+        }
+        EquipoPrestado elegido = pendientes.get(fila);
+        CondicionDevolucion condicion = (CondicionDevolucion) cmbCondicion.getSelectedItem();
+        String observacion = txtObservacion.getText();
 
+        ejecutar(() -> {
+            boolean finalizado = controller.devolverEquipo(elegido.detalleId(), condicion, observacion);
+            String mensaje = "Devoluci\u00f3n registrada. El equipo " + elegido.codigoInventario()
+                    + (condicion == CondicionDevolucion.BUENO
+                    ? " qued\u00f3 DISPONIBLE." : " qued\u00f3 DANADO.");
+            if (finalizado) {
+                mensaje += "\nEl pr\u00e9stamo " + elegido.prestamoId() + " qued\u00f3 FINALIZADO.";
+            }
+            info(mensaje);
+            txtObservacion.setText("");
+            cmbCondicion.setSelectedIndex(0);
+            cargarPendientes();
+        });
+    }
 
+    private void ejecutar(Runnable accion) {
+        try {
+            accion.run();
+        } catch (BusinessException ex) {
+            aviso(ex.getMessage());
+        } catch (RuntimeException ex) {
+            aviso("Ocurri\u00f3 un problema al realizar la operaci\u00f3n. Intente de nuevo.");
+        }
+    }
+
+    private void aviso(String mensaje) {
+        JOptionPane.showMessageDialog(panelPrincipal, mensaje, "Aviso", JOptionPane.WARNING_MESSAGE);
+    }
+
+    private void info(String mensaje) {
+        JOptionPane.showMessageDialog(panelPrincipal, mensaje, "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public JPanel getPanelPrincipal() {
         return panelPrincipal;
     }
 
-    private void agregarCampo(
-            JPanel panel,
-            int fila,
-            String etiqueta,
-            JComponent componente) {
-
-        GridBagConstraints c =
-                new GridBagConstraints();
-
-        c.gridx = 0;
-        c.gridy = fila;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(
-                5, 5, 5, 5);
-
-        panel.add(
-                new JLabel(etiqueta),
-                c);
-
-        c.gridx = 1;
-        c.weightx = 1;
-        c.fill = GridBagConstraints.HORIZONTAL;
-
-        panel.add(
-                componente,
-                c);
+    {
+// GUI initializer generated by IntelliJ IDEA GUI Designer
+// >>> IMPORTANT!! <<<
+// DO NOT EDIT OR ADD ANY CODE HERE!
+        $$$setupUI$$$();
     }
+
+    /**
+     * Method generated by IntelliJ IDEA GUI Designer
+     * >>> IMPORTANT!! <<<
+     * DO NOT edit this method OR call it in your code!
+     *
+     * @noinspection ALL
+     */
+    private void $$$setupUI$$$() {
+        panelPrincipal = new JPanel();
+        panelPrincipal.setLayout(new GridLayoutManager(5, 4, new Insets(10, 10, 10, 10), -1, -1));
+        lblTotal = new JLabel();
+        lblTotal.setText("Equipos pendientes de devolución: 0");
+        panelPrincipal.add(lblTotal, new GridConstraints(0, 0, 1, 3, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        btnActualizar = new JButton();
+        btnActualizar.setText("Actualizar lista");
+        panelPrincipal.add(btnActualizar, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JScrollPane scrollPane1 = new JScrollPane();
+        panelPrincipal.add(scrollPane1, new GridConstraints(1, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        tblPendientes = new JTable();
+        scrollPane1.setViewportView(tblPendientes);
+        final JLabel label1 = new JLabel();
+        label1.setText("Condición al regresar:");
+        panelPrincipal.add(label1, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cmbCondicion = new JComboBox();
+        panelPrincipal.add(cmbCondicion, new GridConstraints(2, 1, 1, 3, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label2 = new JLabel();
+        label2.setText("Observación:");
+        panelPrincipal.add(label2, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        txtObservacion = new JTextField();
+        panelPrincipal.add(txtObservacion, new GridConstraints(3, 1, 1, 3, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        btnDevolver = new JButton();
+        btnDevolver.setText("Registrar devolución del equipo seleccionado");
+        panelPrincipal.add(btnDevolver, new GridConstraints(4, 1, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$() {
+        return panelPrincipal;
+    }
+
 }
