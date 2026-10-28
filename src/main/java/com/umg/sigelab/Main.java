@@ -14,6 +14,8 @@ public class Main {
         } catch (Exception ignorada) {
             // Si falla, se usa el aspecto por defecto de Swing.
         }
+
         SwingUtilities.invokeLater(Inicio_de_sesion::abrir);
     }
 }
+
