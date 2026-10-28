@@ -176,9 +176,11 @@ public class MainFrame extends JFrame {
     private void mostrarBienvenida() {
         JPanel p = new JPanel(new BorderLayout());
         JLabel l = new JLabel("Bienvenido, " + usuario.getNombre()
-                + ". Seleccione una opción del menú.", SwingConstants.CENTER);
+                + ". Seleccione una opci\u00f3n del men\u00fa.", SwingConstants.CENTER);
         l.setFont(l.getFont().deriveFont(16f));
-        p.add(l, BorderLayout.CENTER);
+        l.setBorder(BorderFactory.createEmptyBorder(14, 0, 6, 0));
+        p.add(l, BorderLayout.NORTH);
+        p.add(new DashboardForm().getPanelPrincipal(), BorderLayout.CENTER);
         mostrar(p);
     }
 
