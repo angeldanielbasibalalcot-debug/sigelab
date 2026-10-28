@@ -1,21 +1,23 @@
 package com.umg.sigelab.repository;
 
+import com.umg.sigelab.exception.DataAccessException;
 import com.umg.sigelab.model.Equipo;
+import com.umg.sigelab.model.Prestamo;
 import com.umg.sigelab.util.ConexionBD;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.umg.sigelab.model.Prestamo;
-
-import java.sql.Statement;
-
-import com.umg.sigelab.model.DetallePrestamo;
-
-
+/**
+ * Acceso a datos de prestamos. Solo SQL, sin reglas de negocio.
+ * Los metodos que reciben Connection participan en la transaccion del Service.
+ */
 public class PrestamoRepository {
 
     public void probarConexion() {
@@ -30,159 +32,94 @@ public class PrestamoRepository {
 
         }
     }
+
     public List<Equipo> listarEquiposDisponibles() {
 
         List<Equipo> lista = new ArrayList<>();
 
-        String sql =
-                "SELECT * " +
-                        "FROM Equipo " +
-                        "WHERE estado='DISPONIBLE'";
+        String sql = "SELECT id, codigo_inventario, nombre "
+                + "FROM Equipo WHERE estado = 'DISPONIBLE' "
+                + "ORDER BY codigo_inventario";
 
         try (Connection con = ConexionBD.obtenerConexion();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-
                 Equipo equipo = new Equipo();
-
                 equipo.setId(rs.getInt("id"));
-                equipo.setCodigoInventario(
-                        rs.getString("codigo_inventario"));
-
-                equipo.setNombre(
-                        rs.getString("nombre"));
-
+                equipo.setCodigoInventario(rs.getString("codigo_inventario"));
+                equipo.setNombre(rs.getString("nombre"));
                 lista.add(equipo);
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            throw new DataAccessException("No se pudo cargar la lista de equipos disponibles.", e);
         }
 
         return lista;
     }
-    public int guardarPrestamo(Prestamo prestamo) {
 
-        String sql =
-                "INSERT INTO Prestamo (" +
-                        "solicitante," +
-                        "fecha_prestamo," +
-                        "fecha_esperada_devolucion," +
-                        "usuario_registra_id," +
-                        "estado," +
-                        "observaciones" +
-                        ") VALUES (?,?,?,?,?,?)";
+    // ------------------------------------------------------------------
+    // Metodos transaccionales: reciben la Connection de Transaccion.
+    // No capturan SQLException; si algo falla, Transaccion hace rollback.
+    // ------------------------------------------------------------------
 
-        try (
-                Connection con = ConexionBD.obtenerConexion();
-
-                PreparedStatement ps =
-                        con.prepareStatement(
-                                sql,
-                                Statement.RETURN_GENERATED_KEYS)
-        ) {
-
-            ps.setString(
-                    1,
-                    prestamo.getSolicitante());
-
-            ps.setDate(
-                    2,
-                    new java.sql.Date(
-                            prestamo.getFechaPrestamo().getTime()));
-
-            ps.setDate(
-                    3,
-                    new java.sql.Date(
-                            prestamo.getFechaEsperadaDevolucion().getTime()));
-
-            ps.setInt(
-                    4,
-                    prestamo.getUsuarioRegistraId());
-
-            ps.setString(
-                    5,
-                    prestamo.getEstado().name());
-
-            ps.setString(
-                    6,
-                    prestamo.getObservaciones());
-
+    public int insertarPrestamo(Connection con, Prestamo prestamo) throws SQLException {
+        String sql = "INSERT INTO Prestamo (solicitante, fecha_prestamo, fecha_esperada_devolucion, "
+                + "usuario_registra_id, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, prestamo.getSolicitante());
+            ps.setTimestamp(2, new Timestamp(prestamo.getFechaPrestamo().getTime()));
+            ps.setTimestamp(3, new Timestamp(prestamo.getFechaEsperadaDevolucion().getTime()));
+            ps.setInt(4, prestamo.getUsuarioRegistraId());
+            ps.setString(5, prestamo.getEstado().name());
+            ps.setString(6, prestamo.getObservaciones());
             ps.executeUpdate();
-
-            ResultSet rs = ps.getGeneratedKeys();
-
-            if (rs.next()) {
-                return rs.getInt(1);
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
         }
-
-        return 0;
+        throw new SQLException("No se obtuvo el id del prestamo creado.");
     }
-    public void guardarDetallePrestamo(
-            DetallePrestamo detalle) {
 
-        String sql =
-                "INSERT INTO DetallePrestamo (" +
-                        "prestamo_id," +
-                        "equipo_id" +
-                        ") VALUES (?,?)";
-
-        try (
-                Connection con =
-                        ConexionBD.obtenerConexion();
-
-                PreparedStatement ps =
-                        con.prepareStatement(sql)
-        ){
-
-            ps.setInt(
-                    1,
-                    detalle.getPrestamoId());
-
-            ps.setInt(
-                    2,
-                    detalle.getEquipoId());
-
+    public void insertarDetalle(Connection con, int prestamoId, int equipoId) throws SQLException {
+        String sql = "INSERT INTO DetallePrestamo (prestamo_id, equipo_id) VALUES (?, ?)";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, prestamoId);
+            ps.setInt(2, equipoId);
             ps.executeUpdate();
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
         }
     }
-    public void actualizarEstadoEquipo(
-            int equipoId) {
 
-        String sql =
-                "UPDATE Equipo " +
-                        "SET estado = 'PRESTADO' " +
-                        "WHERE id = ?";
-
-        try (
-                Connection con =
-                        ConexionBD.obtenerConexion();
-
-                PreparedStatement ps =
-                        con.prepareStatement(sql)
-        ) {
-
+    public String obtenerCodigoEquipo(Connection con, int equipoId) throws SQLException {
+        String sql = "SELECT codigo_inventario FROM Equipo WHERE id = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, equipoId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
 
-            ps.executeUpdate();
+    public String obtenerEstadoEquipo(Connection con, int equipoId) throws SQLException {
+        String sql = "SELECT estado FROM Equipo WHERE id = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, equipoId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
 
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
+    /** Cambia a PRESTADO solo si sigue DISPONIBLE. Devuelve false si otro proceso lo tomo antes. */
+    public boolean marcarPrestadoSiDisponible(Connection con, int equipoId) throws SQLException {
+        String sql = "UPDATE Equipo SET estado = 'PRESTADO' WHERE id = ? AND estado = 'DISPONIBLE'";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, equipoId);
+            return ps.executeUpdate() == 1;
         }
     }
 }
