@@ -6,7 +6,7 @@ import com.umg.sigelab.service.UsuarioService;
 
 import java.util.List;
 
-/** Coordina UsuariosPanel con UsuarioService. No contiene reglas de negocio. */
+/** Coordina UsuarioForm con UsuarioService. No contiene reglas de negocio. */
 public class UsuarioController {
 
     private final UsuarioService usuarioService = new UsuarioService();
@@ -33,5 +33,17 @@ public class UsuarioController {
 
     public void reactivar(int idUsuario) {
         usuarioService.reactivar(idUsuario);
+    }
+
+    public boolean tieneRostro(int idUsuario) {
+        return usuarioService.tieneRostro(idUsuario);
+    }
+
+    public void registrarRostro(int idUsuario) {
+        usuarioService.registrarRostro(idUsuario);
+    }
+
+    public void eliminarRostro(int idUsuario) {
+        usuarioService.eliminarRostro(idUsuario);
     }
 }

@@ -34,6 +34,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository = new UsuarioRepository();
     private final RolRepository rolRepository = new RolRepository();
     private final AuditoriaRepository auditoriaRepository = new AuditoriaRepository();
+    private final FacialService facialService = new FacialService();
 
     public List<Usuario> listar() {
         AutorizacionService.exigirRol(NombreRol.ADMIN);
@@ -134,8 +135,44 @@ public class UsuarioService {
     public void reactivar(int idUsuario) {
         cambiarEstado(idUsuario, EstadoUsuario.ACTIVO, AccionAuditoria.USUARIO_REACTIVADO);
     }
+    /** Indica si el usuario ya tiene un rostro registrado (no enciende la camara). */
+    public boolean tieneRostro(int idUsuario) {
+        AutorizacionService.exigirRol(NombreRol.ADMIN);
+        buscarExistente(idUsuario);
+        return facialService.tieneRostro(idUsuario);
+    }
+
+    /** Captura y guarda el rostro del usuario. Se usa como segundo factor del login (RN-02). */
+    public void registrarRostro(int idUsuario) {
+        AutorizacionService.exigirRol(NombreRol.ADMIN);
+        Usuario usuario = buscarExistente(idUsuario);
+        int actor = SesionActual.getUsuario().getId();
+
+        facialService.registrarRostro(usuario.getId());
+
+        Transaccion.ejecutarSinResultado(con ->
+                auditoriaRepository.registrar(con, actor, AccionAuditoria.ROSTRO_REGISTRADO, "Usuario",
+                        usuario.getId(), "Rostro registrado para " + usuario.getUsername()));
+    }
+    /** Elimina el rostro del usuario. Sin rostro, el usuario no podra iniciar sesion (RN-02). */
+    public void eliminarRostro(int idUsuario) {
+        AutorizacionService.exigirRol(NombreRol.ADMIN);
+        Usuario usuario = buscarExistente(idUsuario);
+        int actor = SesionActual.getUsuario().getId();
+
+        if (!facialService.tieneRostro(usuario.getId())) {
+            throw new BusinessException("El usuario " + usuario.getUsername() + " no tiene un rostro registrado.");
+        }
+        facialService.eliminarRostro(usuario.getId());
+
+        Transaccion.ejecutarSinResultado(con ->
+                auditoriaRepository.registrar(con, actor, AccionAuditoria.ROSTRO_ELIMINADO, "Usuario",
+                        usuario.getId(), "Rostro eliminado para " + usuario.getUsername()));
+    }
+
 
     // ---------------- privados ----------------
+
 
     private void cambiarEstado(int idUsuario, EstadoUsuario nuevoEstado, AccionAuditoria accion) {
         AutorizacionService.exigirRol(NombreRol.ADMIN);
