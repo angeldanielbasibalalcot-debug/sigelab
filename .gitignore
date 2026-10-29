@@ -37,3 +37,8 @@ build/
 
 ### SIGELAB ###
 config.properties
+### Componente facial ###
+facial/.venv/
+facial/rostros/
+facial/__pycache__/
+facial/*.jpg
