@@ -125,6 +125,13 @@ def eliminar(usuario_id):
         shutil.rmtree(destino, ignore_errors=True)
         return respuesta(True, "Rostro eliminado.")
 
+@app.get("/estado/<int:usuario_id>")
+def estado(usuario_id):
+    origen = carpeta_usuario(usuario_id)
+    registrado = os.path.isdir(origen) and len(os.listdir(origen)) > 0
+    mensaje = "El usuario tiene un rostro registrado." if registrado else "El usuario no tiene un rostro registrado."
+    return respuesta(True, mensaje, registrado=registrado)
+
 
 if __name__ == "__main__":
     os.makedirs(CARPETA, exist_ok=True)
