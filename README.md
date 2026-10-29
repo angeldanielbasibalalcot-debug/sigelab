@@ -88,7 +88,7 @@ View -> Controller -> Service -> Repository -> JDBC -> SQL Server
 - `repository`: consultas SQL
 - `model`: entidades y enums
 - `exception`: BusinessException y DataAccessException
-- `util`: conexion, QR, cliente facial y sesion actual
+- `util`: conexion, transacciones, sesion actual, hash de contrasenas y QR (el cliente del reconocimiento facial esta en `service/FacialService`)
 
 ## Dependencias externas
 - SQL Server 2022 y el driver JDBC mssql-jdbc 12.8.1.jre11.
@@ -101,3 +101,9 @@ View -> Controller -> Service -> Repository -> JDBC -> SQL Server
 - No se trabaja directamente sobre `master`: una rama por funcionalidad (`feat/...`, `fix/...`, `docs/...`).
 - Los cambios llegan a `master` mediante Pull Request.
 - Mensajes de commit: `feat:`, `fix:`, `docs:`, `chore:`.
+
+## Documentacion
+- Manual tecnico: `docs/manual_tecnico.md`
+- Manual de usuario: `docs/manual_usuario.md`
+- Diagrama entidad-relacion: `docs/diagrama_er.md`
+- Matriz de casos de prueba (CP-01 a CP-18): `docs/matriz_de_pruebas.md`
