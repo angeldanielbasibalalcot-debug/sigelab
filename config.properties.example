@@ -2,4 +2,4 @@
 # config.properties NO se sube a Git (esta en .gitignore).
 db.url=jdbc:sqlserver://localhost:1433;databaseName=SIGELAB;encrypt=true;trustServerCertificate=true
 db.user=sa
-db.password=Proyectos2000
+db.password=CAMBIAR_AQUI
