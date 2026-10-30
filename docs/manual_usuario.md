@@ -27,7 +27,7 @@ La barra de menus puede mostrar hasta cuatro menus: Archivo (con las opciones Ce
 Muestra cantidades obtenidas de la base de datos: total de equipos, disponibles, prestados, danados, en mantenimiento, de baja, prestamos activos y prestamos vencidos. Pulse **Actualizar** para refrescar los numeros.
 
 ## 4. Usuarios (solo ADMIN)
-- **Nuevo**: limpia el formulario para crear un usuario. Complete usuario, nombre, apellido, correo, contrasena (el campo se llama "Nueva contrasena (opcional)") y rol, y pulse **Guardar**.
+- **Nuevo**: limpia el formulario para crear un usuario. Complete usuario, nombre, apellido, correo, **Contrasena** (obligatoria al crear: si queda vacia aparece el aviso "Ingrese una contrasena.") y rol, y pulse **Guardar**. Si selecciona un usuario existente, el campo cambia a "Nueva contrasena (opcional)": vacio deja la contrasena actual sin cambios.
 - Para editar, seleccione un usuario de la tabla, cambie los datos y pulse **Actualizar**. El campo **Usuario** no se puede cambiar al editar.
 - La casilla **Activo** es solo informativa: el estado se cambia con el boton **Desactivar**.
 - **Desactivar**: el usuario deja de poder iniciar sesion, pero su historial se conserva. Los botones **Desactivar**, **Registrar rostro** y **Eliminar rostro** estan deshabilitados hasta que se selecciona un usuario.
