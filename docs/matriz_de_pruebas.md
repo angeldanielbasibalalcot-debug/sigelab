@@ -5,7 +5,7 @@ Proyecto Final - Curso 017 Programacion II - UMG
 Los resultados fueron registrados por el integrante Angel Daniel Basibal Alcot, ejecutando cada caso en la aplicacion y verificando el estado de los equipos en la pantalla de Equipos.
 
 ## Datos de partida
-- Base de datos creada con `database/sigelab_schema.sql`: 14 equipos (10 DISPONIBLES, 1 DANADO, 1 en MANTENIMIENTO, 2 de BAJA).
+- Base de datos creada con `database/sigelab_schema.sql`, que inserta 13 equipos (10 DISPONIBLES, 1 DANADO, 1 en MANTENIMIENTO, 1 de BAJA). Durante las pruebas se crearon CAM-099 y TEST-001, que quedaron en BAJA; por eso el estado final de la base es de 15 equipos (10 DISPONIBLES, 1 DANADO, 1 en MANTENIMIENTO, 3 de BAJA).
 - Usuarios de prueba: admin, encargado, docente e inactivo (ver README.md).
 - Componente facial iniciado antes de la aplicacion (ver README.md).
 
@@ -37,3 +37,11 @@ Los resultados fueron registrados por el integrante Angel Daniel Basibal Alcot, 
 - CP-02: un rostro ajeno y una cara tapada son rechazados, tanto directamente en la API facial como en el login real.
 - Un usuario sin rostro registrado es denegado con un mensaje claro, y si la API facial esta apagada el acceso se deniega sin mostrar errores tecnicos.
 - Los eventos relevantes (login, prestamos, devoluciones, mantenimiento, rostros) quedan registrados en Auditoria (RN-18).
+
+## Notas sobre otros casos
+- CP-13: la segunda devolucion se rechazo en el Service. Se probo abriendo dos instancias de la aplicacion: se devolvio el equipo en la primera y, desde la segunda con la lista desactualizada, el sistema lo rechazo. La proteccion adicional del UPDATE (condicion fecha_devolucion IS NULL) no se probo en vivo.
+- CP-18: la fecha esperada de un prestamo se guarda a las 23:59:59 del dia elegido y la aplicacion no permite crear prestamos con fecha anterior a hoy. Por eso el prestamo vencido se simulo adelantando las fechas desde SSMS. El calculo de "vencido" (ACTIVO, con equipos pendientes y fecha esperada anterior a hoy) lo hace ReporteService.
+
+## Limitaciones conocidas
+- Horas: la fecha del prestamo la envia Java con la hora de la computadora (Guatemala), mientras que la fecha y hora de Auditoria y la fecha de salida de Mantenimiento las asigna SQL Server con SYSDATETIME(), y el contenedor de Docker esta en UTC. Por eso esos campos muestran 6 horas de diferencia. No afecta las reglas de negocio.
+- Auditoria y usuarios sin rostro: un usuario sin rostro registrado es bloqueado con un mensaje claro, pero ese intento no deja registro LOGIN_FALLIDO, porque el bloqueo ocurre antes de que se registre el rastro. Los rostros rechazados si dejan LOGIN_FALLIDO.
