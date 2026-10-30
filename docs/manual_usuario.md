@@ -21,19 +21,22 @@ Casos en los que no se puede entrar: usuario inactivo, contrasena incorrecta, ro
 | Consultas | Reportes | Si | Si | Si |
 | Consultas | Auditoria | Si | No | No |
 
+La barra de menus puede mostrar hasta cuatro menus: Archivo (con las opciones Cerrar sesion y Salir), Catalogos, Operaciones y Consultas.
+
 ## 3. Dashboard
 Muestra cantidades obtenidas de la base de datos: total de equipos, disponibles, prestados, danados, en mantenimiento, de baja, prestamos activos y prestamos vencidos. Pulse **Actualizar** para refrescar los numeros.
 
 ## 4. Usuarios (solo ADMIN)
-- **Nuevo**: limpia el formulario para crear un usuario. Complete usuario, nombre, apellido, correo, contrasena y rol, y pulse **Guardar**.
-- Para editar, seleccione un usuario de la tabla, cambie los datos y pulse **Actualizar**.
-- **Desactivar**: el usuario deja de poder iniciar sesion, pero su historial se conserva.
-- **Registrar rostro**: seleccione un usuario y pulse el boton; la persona debe mirar a la camara mientras se toman las muestras. Registre el rostro con la misma luz y posicion de camara con que se usara el sistema.
+- **Nuevo**: limpia el formulario para crear un usuario. Complete usuario, nombre, apellido, correo, contrasena (el campo se llama "Nueva contrasena (opcional)") y rol, y pulse **Guardar**.
+- Para editar, seleccione un usuario de la tabla, cambie los datos y pulse **Actualizar**. El campo **Usuario** no se puede cambiar al editar.
+- La casilla **Activo** es solo informativa: el estado se cambia con el boton **Desactivar**.
+- **Desactivar**: el usuario deja de poder iniciar sesion, pero su historial se conserva. Los botones **Desactivar**, **Registrar rostro** y **Eliminar rostro** estan deshabilitados hasta que se selecciona un usuario.
+- **Registrar rostro**: seleccione un usuario y pulse el boton; la persona debe mirar a la camara mientras se toman las muestras. Registre el rostro con la misma luz y posicion de camara con que se usara el sistema. Si el usuario no tiene rostro, la pantalla muestra: "Sin rostro registrado: este usuario no podra iniciar sesion."
 - **Eliminar rostro**: borra el rostro registrado. Sin rostro, el usuario no podra iniciar sesion.
 - **Buscar**: filtra la tabla de usuarios.
 
 ## 5. Laboratorios (solo ADMIN)
-Campos: ID, Codigo, Nombre, Ubicacion, Capacidad y Activo. **Nuevo**, **Guardar** y **Actualizar** funcionan como en Usuarios. **Desactivar** y **Reactivar** cambian el estado del laboratorio. El codigo no puede repetirse y la capacidad debe ser mayor que cero. Use **Buscar laboratorio** para filtrar.
+Campos: ID, Codigo, Nombre, Ubicacion, Capacidad y Activo. **Nuevo**, **Guardar** y **Actualizar** funcionan como en Usuarios. **Desactivar** y **Reactivar** cambian el estado del laboratorio; segun el estado del laboratorio seleccionado, solo uno de los dos botones esta habilitado. El codigo no puede repetirse y la capacidad debe ser mayor que cero. El campo **Buscar laboratorio** filtra la tabla mientras se escribe, sin boton.
 
 ## 6. Tipos de equipo (solo ADMIN)
 Campos: ID, Nombre y Descripcion, con **Nuevo**, **Guardar** y **Actualizar**. Use **Buscar tipo de equipo** para filtrar. Los tipos se eligen despues desde una lista al registrar equipos.
@@ -50,7 +53,7 @@ Campos: Codigo de inventario, Nombre, Tipo de equipo, Marca, Modelo, Numero de s
 Estados de un equipo: DISPONIBLE (puede prestarse), PRESTADO, DANADO, MANTENIMIENTO y BAJA. Solo un equipo DISPONIBLE puede prestarse.
 
 ## 8. Prestamos (ADMIN y ENCARGADO)
-1. Escriba el **Solicitante** y la **Fecha esperada** de devolucion (dd/MM/aaaa). Las observaciones son opcionales.
+1. Escriba el **Solicitante** y la **Fecha esperada** de devolucion (dd/MM/aaaa). La fecha esperada no puede ser anterior a hoy. Las observaciones son opcionales.
 2. Agregue equipos de dos maneras: elija uno en **Equipo disponible** y pulse **Agregar**, o use **Identificar por QR** con **Leer QR**.
 3. Cada equipo agregado aparece en la tabla; el contador "Equipos en el prestamo" muestra cuantos hay. Use **Quitar seleccionado** si se equivoco.
 4. Pulse **Registrar prestamo**. Todos los equipos pasan a PRESTADO.
@@ -69,13 +72,13 @@ Resultado: BUENO deja el equipo DISPONIBLE; DANADO lo deja DANADO. Se puede devo
 ## 10. Mantenimiento (ADMIN y ENCARGADO)
 **Enviar un equipo:** elija el **Equipo** (pueden enviarse equipos DANADOS o DISPONIBLES), el **Tipo de mantenimiento** (preventivo o correctivo), escriba la **Descripcion**, el **Responsable** y las observaciones, y pulse **Enviar a mantenimiento**. El equipo pasa a MANTENIMIENTO y no puede prestarse.
 
-**Cerrar un mantenimiento:** seleccione el mantenimiento en la tabla, elija el **Resultado** y pulse **Finalizar mantenimiento**. Si fue reparado, el equipo vuelve a DISPONIBLE; si no es reparable, pasa a BAJA.
+**Cerrar un mantenimiento:** seleccione el mantenimiento en la tabla, elija el **Resultado** y pulse **Finalizar mantenimiento**. El sistema pide una confirmacion (Si / No) antes de cerrarlo. Si fue reparado, el equipo vuelve a DISPONIBLE; si no es reparable, pasa a BAJA.
 
 **Limpiar** vacia el formulario, **Recargar** actualiza la tabla y la casilla **Mostrar solo mantenimientos en proceso** filtra los que siguen abiertos.
 
 ## 11. Reportes (todos los roles)
-1. Elija el tipo en **Reporte**.
-2. Segun el reporte, indique **Desde** y **Hasta** (dd/MM/aaaa) o el **Codigo de equipo**.
+1. Elija el tipo en **Reporte**. Los reportes disponibles son siete: Equipos por estado, Prestamos activos (no vencidos), Prestamos finalizados, Prestamos vencidos, Prestamos entre fechas, Historial de prestamos de un equipo e Historial de mantenimiento.
+2. Segun el reporte, se habilitan los filtros **Desde** y **Hasta** (dd/MM/aaaa) o **Codigo de equipo**.
 3. Pulse **Consultar**. El contador "Registros" indica cuantos resultados hay. **Limpiar** vacia los filtros.
 
 Un prestamo se considera vencido cuando su fecha esperada ya paso y todavia tiene equipos pendientes.
